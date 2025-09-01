@@ -4,6 +4,7 @@ const multer = require("multer"); // Para upload de arquivos
 const path = require("path");
 const fs = require("fs");
 
+
 const app = express();
 
 // Conecta ao Redis (URL vem da variável de ambiente REDIS_URL)

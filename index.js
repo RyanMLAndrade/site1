@@ -4,7 +4,6 @@ const multer = require("multer"); // Para upload de arquivos
 const path = require("path");
 const fs = require("fs");
 
-
 const app = express();
 
 // Conecta ao Redis (URL vem da variável de ambiente REDIS_URL)
@@ -23,7 +22,16 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ---------- ROTAS ----------
+// ---------- ROTA INICIAL ----------
+app.get("/", (req, res) => {
+  res.send(`
+    <h1>Bem-vindo ao Compartilhador!</h1>
+    <p>Use <strong>/sala/:senha</strong> para criar/ver salas de texto.</p>
+    <p>Use <strong>/sala/:senha/upload</strong> para enviar arquivos.</p>
+  `);
+});
+
+// ---------- ROTAS DE TEXTO ----------
 
 // Salvar texto em uma "sala"
 app.post("/sala/:senha", async (req, res) => {
@@ -49,6 +57,8 @@ app.get("/sala/:senha", async (req, res) => {
   }
 });
 
+// ---------- ROTAS DE ARQUIVOS ----------
+
 // Upload de arquivos
 app.post("/sala/:senha/upload", upload.single("arquivo"), async (req, res) => {
   if (!req.file) return res.status(400).send({ erro: "Nenhum arquivo enviado" });
@@ -71,7 +81,8 @@ app.get("/sala/:senha/arquivo/:nome", (req, res) => {
   const { nome } = req.params;
   const filePath = path.join(uploadFolder, nome);
 
-  if (!fs.existsSync(filePath)) return res.status(404).send({ erro: "Arquivo não encontrado" });
+  if (!fs.existsSync(filePath))
+    return res.status(404).send({ erro: "Arquivo não encontrado" });
 
   res.download(filePath);
 });

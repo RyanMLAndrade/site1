@@ -1,12 +1,12 @@
 const express = require("express");
 const Redis = require("ioredis");
-const multer = require("multer"); // Para upload de arquivos
+const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
 const app = express();
 
-// Conecta ao Redis (URL vem da variável de ambiente REDIS_URL)
+// Conecta ao Redis
 const redis = new Redis(process.env.REDIS_URL);
 
 app.use(express.json());
@@ -22,69 +22,98 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ---------- ROTA INICIAL ----------
+// ---------- ROTA INICIAL (interface mínima) ----------
 app.get("/", (req, res) => {
   res.send(`
     <h1>Bem-vindo ao Compartilhador!</h1>
-    <p>Use <strong>/sala/:senha</strong> para criar/ver salas de texto.</p>
-    <p>Use <strong>/sala/:senha/upload</strong> para enviar arquivos.</p>
+    <form method="POST" action="/sala/teste">
+      <label>Senha da Sala:</label>
+      <input type="text" name="senha" value="teste" required />
+      <br/><br/>
+      <textarea name="conteudo" rows="5" cols="40" placeholder="Digite ou cole o texto aqui"></textarea>
+      <br/><br/>
+      <button type="submit">Salvar Texto</button>
+    </form>
+    <p>Após salvar, acesse <a href="/sala/teste">/sala/teste</a> para ver o conteúdo.</p>
   `);
 });
 
 // ---------- ROTAS DE TEXTO ----------
 
-// Salvar texto em uma "sala"
+// Criar/editar texto
 app.post("/sala/:senha", async (req, res) => {
-  const { senha } = req.params;
-  const { conteudo } = req.body;
+  try {
+    const { senha } = req.params;
+    const { conteudo } = req.body;
+    if (!conteudo) return res.status(400).send({ erro: "Conteúdo vazio" });
 
-  if (!conteudo) return res.status(400).send({ erro: "Conteúdo vazio" });
-
-  // Salva no Redis com expiração de 30 minutos (1800 segundos)
-  await redis.set(`sala:${senha}`, conteudo, "EX", 1800);
-  res.send({ status: "ok", mensagem: "Texto salvo!" });
+    await redis.set(`sala:${senha}`, conteudo, "EX", 1800); // Expira 30 min
+    res.send(`<p>Texto salvo com sucesso!</p><p><a href="/sala/${senha}">Ver Sala</a></p>`);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Erro interno do servidor.");
+  }
 });
 
-// Buscar texto de uma "sala"
+// Ler texto
 app.get("/sala/:senha", async (req, res) => {
-  const { senha } = req.params;
-  const conteudo = await redis.get(`sala:${senha}`);
-
-  if (conteudo) {
-    res.send({ conteudo });
-  } else {
-    res.status(404).send({ erro: "Sala vazia ou expirada." });
+  try {
+    const { senha } = req.params;
+    const conteudo = await redis.get(`sala:${senha}`);
+    if (conteudo) {
+      res.send(`
+        <h2>Conteúdo da sala "${senha}":</h2>
+        <pre>${conteudo}</pre>
+        <p><a href="/">Voltar</a></p>
+      `);
+    } else {
+      res.send(`<p>Sala vazia ou expirada.</p><p><a href="/">Voltar</a></p>`);
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Erro interno do servidor.");
   }
 });
 
 // ---------- ROTAS DE ARQUIVOS ----------
 
-// Upload de arquivos
-app.post("/sala/:senha/upload", upload.single("arquivo"), async (req, res) => {
-  if (!req.file) return res.status(400).send({ erro: "Nenhum arquivo enviado" });
+app.post("/sala/:senha/upload", async (req, res) => {
+  try {
+    upload.single("arquivo")(req, res, async (err) => {
+      if (err) return res.status(400).send({ erro: "Erro no upload" });
+      if (!req.file) return res.status(400).send({ erro: "Nenhum arquivo enviado" });
 
-  // Guarda no Redis apenas referência à sala
-  await redis.lpush(`arquivos:${req.params.senha}`, req.file.filename);
-  await redis.expire(`arquivos:${req.params.senha}`, 1800); // Expira em 30 min
+      await redis.lpush(`arquivos:${req.params.senha}`, req.file.filename);
+      await redis.expire(`arquivos:${req.params.senha}`, 1800);
 
-  res.send({ status: "ok", mensagem: "Arquivo enviado!" });
+      res.send({ status: "ok", mensagem: "Arquivo enviado!" });
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Erro interno do servidor.");
+  }
 });
 
-// Listar arquivos de uma sala
 app.get("/sala/:senha/arquivos", async (req, res) => {
-  const arquivos = await redis.lrange(`arquivos:${req.params.senha}`, 0, -1);
-  res.send({ arquivos });
+  try {
+    const arquivos = await redis.lrange(`arquivos:${req.params.senha}`, 0, -1);
+    res.send({ arquivos });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Erro interno do servidor.");
+  }
 });
 
-// Baixar arquivo
-app.get("/sala/:senha/arquivo/:nome", (req, res) => {
-  const { nome } = req.params;
-  const filePath = path.join(uploadFolder, nome);
-
-  if (!fs.existsSync(filePath))
-    return res.status(404).send({ erro: "Arquivo não encontrado" });
-
-  res.download(filePath);
+app.get("/sala/:senha/arquivo/:nome", async (req, res) => {
+  try {
+    const { nome } = req.params;
+    const filePath = path.join(uploadFolder, nome);
+    if (!fs.existsSync(filePath)) return res.status(404).send({ erro: "Arquivo não encontrado" });
+    res.download(filePath);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Erro interno do servidor.");
+  }
 });
 
 // ---------- START SERVER ----------

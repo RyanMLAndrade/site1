@@ -22,6 +22,37 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// ---------- FUNÇÃO PARA LIMPAR ARQUIVOS EXPIRADOS ----------
+
+async function deleteExpiredFiles() {
+  console.log("Executando a limpeza de arquivos expirados...");
+  const stream = redis.scanStream({ match: 'arquivos:*' });
+  stream.on('data', async (keys) => {
+    if (keys.length) {
+      const pipeline = redis.pipeline();
+      const filesToDelete = [];
+      for (const key of keys) {
+        const fileList = await redis.lrange(key, 0, -1);
+        fileList.forEach(file => filesToDelete.push(file));
+        pipeline.del(key);
+      }
+      await pipeline.exec();
+      
+      filesToDelete.forEach(file => {
+        const filePath = path.join(uploadFolder, file);
+        if (fs.existsSync(filePath)) {
+          fs.unlink(filePath, (err) => {
+            if (err) console.error(`Erro ao apagar o arquivo ${filePath}:`, err);
+            else console.log(`Arquivo ${filePath} apagado com sucesso.`);
+          });
+        }
+      });
+    }
+  });
+  stream.on('end', () => console.log("Limpeza de arquivos concluída."));
+}
+
+
 // ---------- ROTAS PRINCIPAIS ----------
 
 // Rota inicial para inserir a chave da sala
@@ -196,7 +227,8 @@ app.post("/api/sala/:senha", async (req, res) => {
     const { conteudo } = req.body;
     if (!conteudo) return res.status(400).send({ erro: "Conteúdo vazio" });
 
-    await redis.set(`sala:${senha}`, conteudo, "EX", 1800); // Expira em 30 min
+    // Expira em 1 hora
+    await redis.set(`sala:${senha}`, conteudo, "EX", 3600); 
     res.status(200).send({ status: "ok" });
   } catch (err) {
     console.error(err);
@@ -210,8 +242,10 @@ app.post("/api/sala/:senha/upload", async (req, res) => {
       if (err) return res.status(400).send({ erro: "Erro no upload" });
       if (!req.file) return res.status(400).send({ erro: "Nenhum arquivo enviado" });
 
+      // Adiciona o nome do arquivo à lista no Redis
       await redis.lpush(`arquivos:${req.params.senha}`, req.file.filename);
-      await redis.expire(`arquivos:${req.params.senha}`, 1800);
+      // Define a expiração da lista de arquivos para 1 hora
+      await redis.expire(`arquivos:${req.params.senha}`, 3600);
 
       res.status(200).send({ status: "ok", mensagem: "Arquivo enviado!" });
     });
@@ -246,3 +280,7 @@ app.get("/sala/:senha/arquivo/:nome", async (req, res) => {
 // ---------- START SERVER ----------
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Servidor rodando na porta ${port}`));
+
+// ---------- AGENDAMENTO DE LIMPEZA ----------
+// Agenda a execução da função de limpeza a cada 10 minutos (600000 ms).
+setInterval(deleteExpiredFiles, 600000);

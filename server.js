@@ -4,7 +4,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// --- Importe os módulos de rotas ---
+// --- Importa os módulos de rotas (o share.js agora é uma função) ---
 const homeRouter = require("./homescreen.js");
 const createShareRouter = require("./share.js");
 
@@ -26,14 +26,11 @@ async function deleteExpiredFiles() {
   const stream = redis.scanStream({ match: 'arquivos:*' });
   stream.on('data', async (keys) => {
     if (keys.length) {
-      const pipeline = redis.pipeline();
       const filesToDelete = [];
       for (const key of keys) {
         const fileList = await redis.lrange(key, 0, -1);
         fileList.forEach(file => filesToDelete.push(file));
-        pipeline.del(key);
       }
-      await pipeline.exec();
       
       filesToDelete.forEach(file => {
         const filePath = path.join(uploadFolder, file);
@@ -44,24 +41,28 @@ async function deleteExpiredFiles() {
           });
         }
       });
+      // Deleta as chaves do Redis apenas após a exclusão dos arquivos
+      for (const key of keys) {
+        await redis.del(key);
+      }
     }
   });
   stream.on('end', () => console.log("Limpeza de arquivos concluída."));
 }
 
-// Garanta que o Express use os middlewares
+// Garante que o Express use os middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- Conecte as rotas aos seus respectivos caminhos ---
+// --- Conecta as rotas aos seus respectivos caminhos ---
 app.use("/", homeRouter);
-const shareRouter = createShareRouter(redis, upload, uploadFolder, fs, path);
+const shareRouter = createShareRouter(redis, upload, uploadFolder);
 app.use("/", shareRouter);
 
 // ---------- AGENDAMENTO DE LIMPEZA ----------
 // Agenda a execução da função de limpeza a cada 10 minutos (600000 ms).
 setInterval(deleteExpiredFiles, 600000);
 
-// ---------- START SERVER ----------
+// ---------- INICIA O SERVIDOR ----------
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Servidor rodando na porta ${port}`));

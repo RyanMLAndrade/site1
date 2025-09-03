@@ -29,7 +29,7 @@ router.get("/", (req, res) => {
         <p>Funcionalidades:</p>
         <div class="features-grid">
           <div class="feature-box">
-            <a href="/sala">Compartilhar textos, links e arquivos</a>
+            <a href="/compartilhar">Compartilhar textos, links e arquivos</a>
           </div>
           <div class="feature-box coming-soon">
             <span>Coming Soon!</span>

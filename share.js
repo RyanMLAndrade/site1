@@ -6,12 +6,6 @@ const fs = require("fs");
 module.exports = (redis, upload, uploadFolder) => {
   // Rota para a página de entrada da senha
   router.get("/compartilhar", (req, res) => {
-    const { erro } = req.query;
-    let errorMessage = '';
-    if (erro === 'dev_exclusive') {
-      errorMessage = '<p style="color: #dc3545; font-weight: bold;">Erro: sala exclusiva para desenvolvedores</p>';
-    }
-
     res.send(`
       <!DOCTYPE html>
       <html lang="pt-br">
@@ -19,6 +13,12 @@ module.exports = (redis, upload, uploadFolder) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Bem-vindo!</title>
+        <script>
+          // Aplica o tema imediatamente para evitar o "piscar"
+          if (localStorage.getItem('dark-mode') === 'enabled') {
+            document.documentElement.classList.add('dark-mode');
+          }
+        </script>
         <style>
           /* Variáveis CSS para cores */
           :root {
@@ -49,15 +49,8 @@ module.exports = (redis, upload, uploadFolder) => {
             --input-border: #555;
           }
 
-          /* Estilos globais */
-          body { 
-            font-family: sans-serif; 
-            margin: 0; 
-            padding-top: 70px; 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            transition: background-color 0.3s, color 0.3s; 
-          }
+          /* Estilos universais para a barra superior */
+          body { font-family: sans-serif; margin: 0; padding-top: 70px; background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
           .top-bar {
             position: fixed; top: 0; left: 0; width: 100%;
             background-color: var(--top-bar-bg);
@@ -107,7 +100,6 @@ module.exports = (redis, upload, uploadFolder) => {
             max-width: 500px; margin: 0 auto; 
             transition: background 0.3s, box-shadow 0.3s;
           }
-          /* Layout mais quadrado para a tela de seleção de sala */
           .input-group {
             display: flex; flex-direction: column; align-items: center; gap: 10px;
             width: 300px; margin: 0 auto;
@@ -147,6 +139,8 @@ module.exports = (redis, upload, uploadFolder) => {
           }
           button:hover { background-color: var(--button-primary-hover-bg); }
           .message { margin-top: 10px; }
+          .error-message { color: #dc3545; font-size: 0.8em; margin-top: -10px; }
+          .error-message.hidden { display: none; }
 
           /* Estilos da Página de Sala (Sem alteração) */
           .main-content { display: flex; gap: 20px; }
@@ -211,6 +205,7 @@ module.exports = (redis, upload, uploadFolder) => {
 
                 <div class="dev-password-container" id="dev-password-container">
                   <input type="password" name="dev_pass" id="dev-password-input" placeholder="Senha do desenvolvedor" />
+                  <p id="dev-error-message" class="error-message hidden">* Senha de desenvolvedor incorreta!</p>
                 </div>
                 <div class="public-password-container" id="public-password-container">
                   <input type="text" name="public_pass" id="public-password-input" placeholder="Senha para o público" />
@@ -223,7 +218,6 @@ module.exports = (redis, upload, uploadFolder) => {
         </div>
 
         <script>
-          // Lógica do Modo Escuro
           const darkModeToggle = document.getElementById("dark-mode-toggle");
           const darkModeLabel = document.getElementById("dark-mode-label");
           const rootElement = document.documentElement;
@@ -259,6 +253,7 @@ module.exports = (redis, upload, uploadFolder) => {
           const salaSenhaInput = document.getElementById("sala-senha");
           const keyForm = document.getElementById("key-form");
           const devPassword = "git push -u origin main";
+          const devErrorMessage = document.getElementById("dev-error-message");
 
           devModeToggle.addEventListener("change", () => {
             if (devModeToggle.checked) {
@@ -273,20 +268,24 @@ module.exports = (redis, upload, uploadFolder) => {
           });
           
           keyForm.addEventListener("submit", (e) => {
-            // Nova lógica: se o modo dev estiver ativado, prefixe a senha.
-            if (devModeToggle.checked) {
+            // Limpa mensagens de erro anteriores
+            devErrorMessage.classList.add("hidden");
+            
+            // Lógica para bloquear salas que começam com 'dev'
+            if (!devModeToggle.checked && salaSenhaInput.value.toLowerCase().startsWith('dev')) {
+              e.preventDefault();
+              devErrorMessage.textContent = "* Sala exclusiva para desenvolvedores!";
+              devErrorMessage.classList.remove("hidden");
+            } else if (devModeToggle.checked) {
+              // Lógica para modo desenvolvedor
               if (devPasswordInput.value !== devPassword) {
                 e.preventDefault();
-                alert("Senha de desenvolvedor incorreta!");
+                devErrorMessage.textContent = "* Senha de desenvolvedor incorreta!";
+                devErrorMessage.classList.remove("hidden");
               } else {
                 salaSenhaInput.value = "DEV-" + salaSenhaInput.value;
               }
-            } else if (salaSenhaInput.value.toLowerCase().startsWith('dev')) {
-                // Nova lógica: impede o acesso a salas 'dev' se o modo não estiver ativo
-                e.preventDefault();
-                alert("Erro: sala exclusiva para desenvolvedores");
             }
-            // Se nenhum dos casos acima for verdadeiro, o formulário é enviado normalmente.
           });
         </script>
       </body>
@@ -304,6 +303,7 @@ module.exports = (redis, upload, uploadFolder) => {
     try {
       const conteudo = await redis.get(`sala:${senha}`);
       const arquivos = await redis.lrange(`arquivos:${senha}`, 0, -1);
+      const isDevRoom = senha.toLowerCase().startsWith('dev-');
 
       res.send(`
         <!DOCTYPE html>

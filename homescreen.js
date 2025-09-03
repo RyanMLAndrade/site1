@@ -10,11 +10,10 @@ router.get("/", (req, res) => {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Place Holder</title>
       <script>
-        (function() {
-          if (localStorage.getItem('dark-mode') === 'enabled') {
-            document.body.classList.add('dark-mode');
-          }
-        })();
+        // Esta função aplica o tema imediatamente antes da renderização
+        if (localStorage.getItem('dark-mode') === 'enabled') {
+          document.documentElement.classList.add('dark-mode');
+        }
       </script>
       <style>
         /* Variáveis CSS para cores */
@@ -30,7 +29,7 @@ router.get("/", (req, res) => {
           --feature-box-shadow: rgba(0,0,0,0.1);
         }
 
-        body.dark-mode {
+        html.dark-mode {
           --bg-color: #121212;
           --text-color: #e0e0e0;
           --container-bg: #1e1e1e;
@@ -148,16 +147,18 @@ router.get("/", (req, res) => {
 
         function updateDarkModeUI(isDarkMode) {
           if (isDarkMode) {
-            body.classList.add('dark-mode');
+            document.documentElement.classList.add('dark-mode');
             darkModeLabel.textContent = "Modo Escuro ☾";
             darkModeToggle.checked = true;
           } else {
-            body.classList.remove('dark-mode');
+            document.documentElement.classList.remove('dark-mode');
             darkModeLabel.textContent = "Modo Escuro ☀︎";
             darkModeToggle.checked = false;
           }
         }
         
+        // A lógica de estado inicial foi movida para o <head>, mas ainda
+        // precisamos atualizar o estado do switch na tela.
         const isDarkModeInitial = localStorage.getItem('dark-mode') === 'enabled';
         updateDarkModeUI(isDarkModeInitial);
 

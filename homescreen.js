@@ -12,7 +12,7 @@ router.get("/", (req, res) => {
       <script>
         // Aplica o tema imediatamente para evitar o "piscar"
         if (localStorage.getItem('dark-mode') === 'enabled') {
-          document.documentElement.style.backgroundColor = '#121212';
+          document.documentElement.classList.add('dark-mode');
         }
       </script>
       <style>
@@ -73,7 +73,7 @@ router.get("/", (req, res) => {
         .back-button span { font-size: 1.2em; line-height: 1; }
         .back-button:hover { background-color: var(--button-bg-hover); }
 
-        /* Switch de Modo Escuro */
+        /* Estilos do Switch de Modo Escuro */
         .dark-mode-switch { display: flex; align-items: center; gap: 10px; }
         .switch-text { color: var(--text-color); transition: color 0.3s; }
         .switch-label { display: block; cursor: pointer; text-indent: -9999px; width: 50px; height: 25px; background: grey; border-radius: 100px; position: relative; }
@@ -144,14 +144,15 @@ router.get("/", (req, res) => {
         const darkModeToggle = document.getElementById("dark-mode-toggle");
         const darkModeLabel = document.getElementById("dark-mode-label");
         const body = document.body;
+        const rootElement = document.documentElement;
 
         function updateDarkModeUI(isDarkMode) {
           if (isDarkMode) {
-            document.documentElement.classList.add('dark-mode');
+            rootElement.classList.add('dark-mode');
             darkModeLabel.textContent = "Modo Escuro ☾";
             darkModeToggle.checked = true;
           } else {
-            document.documentElement.classList.remove('dark-mode');
+            rootElement.classList.remove('dark-mode');
             darkModeLabel.textContent = "Modo Escuro ☀︎";
             darkModeToggle.checked = false;
           }

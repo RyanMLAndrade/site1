@@ -6,7 +6,6 @@ const fs = require("fs");
 module.exports = (redis, upload, uploadFolder) => {
   // Rota para a página de entrada da senha
   router.get("/compartilhar", (req, res) => {
-    // Adicione a lógica de exibição de erro
     const { erro } = req.query;
     let errorMessage = '';
     if (erro === 'dev_exclusive') {
@@ -20,12 +19,6 @@ module.exports = (redis, upload, uploadFolder) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Bem-vindo!</title>
-        <script>
-          // Aplica o tema imediatamente
-          if (localStorage.getItem('dark-mode') === 'enabled') {
-            document.documentElement.classList.add('dark-mode');
-          }
-        </script>
         <style>
           /* Variáveis CSS para cores */
           :root {
@@ -40,10 +33,6 @@ module.exports = (redis, upload, uploadFolder) => {
             --button-primary-hover-bg: #0056b3;
             --input-bg: white;
             --input-border: #ccc;
-            --right-column-bg: #f9f9f9;
-            --right-column-shadow: rgba(0,0,0,0.1);
-            --file-item-bg: #eee;
-            --file-item-link-color: #007bff;
           }
 
           html.dark-mode {
@@ -58,14 +47,17 @@ module.exports = (redis, upload, uploadFolder) => {
             --button-primary-hover-bg: #0056b3;
             --input-bg: #2c2c2c;
             --input-border: #555;
-            --right-column-bg: #222;
-            --right-column-shadow: rgba(0,0,0,0.3);
-            --file-item-bg: #282828;
-            --file-item-link-color: #87cefa;
           }
 
-          /* Estilos universais para a barra superior */
-          body { font-family: sans-serif; margin: 0; padding-top: 70px; background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
+          /* Estilos globais */
+          body { 
+            font-family: sans-serif; 
+            margin: 0; 
+            padding-top: 70px; 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            transition: background-color 0.3s, color 0.3s; 
+          }
           .top-bar {
             position: fixed; top: 0; left: 0; width: 100%;
             background-color: var(--top-bar-bg);
@@ -78,8 +70,6 @@ module.exports = (redis, upload, uploadFolder) => {
             transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
           }
           .top-bar-left, .top-bar-right { display: flex; align-items: center; gap: 20px; }
-
-          /* Estilos do Botão Voltar */
           .back-button {
             background-color: transparent;
             color: var(--text-color);
@@ -95,14 +85,15 @@ module.exports = (redis, upload, uploadFolder) => {
           .back-button span { font-size: 1.2em; line-height: 1; }
           .back-button:hover { background-color: var(--button-bg-hover); }
 
-          /* Switch de Modo Escuro */
-          .dark-mode-switch { display: flex; align-items: center; gap: 10px; }
+          /* Estilos do Switch de Modo Escuro e Desenvolvedor */
+          .dark-mode-switch, .dev-mode-switch-container { display: flex; align-items: center; gap: 10px; }
           .switch-text { color: var(--text-color); transition: color 0.3s; }
           .switch-label { display: block; cursor: pointer; text-indent: -9999px; width: 50px; height: 25px; background: grey; border-radius: 100px; position: relative; }
           .switch-label:after { content: ''; position: absolute; top: 2px; left: 2px; width: 21px; height: 21px; background: #fff; border-radius: 90px; transition: 0.3s; }
           .dark-mode-input:checked + .switch-label { background: #007bff; }
           .dark-mode-input:checked + .switch-label:after { left: calc(100% - 2px); transform: translateX(-100%); }
           .dark-mode-input { display: none; }
+          .dev-mode-input:checked + .switch-label { background: #ffc107; }
           
           /* Estilos da Página de Entrada (Compartilhar) */
           .page-container { 
@@ -114,32 +105,27 @@ module.exports = (redis, upload, uploadFolder) => {
             max-width: 500px; margin: 0 auto; 
             transition: background 0.3s, box-shadow 0.3s;
           }
-          /* Layout mais quadrado para a tela de seleção de sala */
+          /* Layout mais compacto e quadrado para a tela de seleção de sala */
           .input-group {
-            display: flex; flex-direction: column; align-items: center; gap: 1rem;
-            max-width: 300px; margin: 0 auto;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            width: 300px; margin: 0 auto;
           }
-          .dev-mode-container {
-            display: flex; align-items: center; gap: 10px; margin-top: 1rem;
-          }
-          #dev-password-input {
-            width: 100%;
-            transition: opacity 0.3s ease-in-out;
+          .dev-password-container, .public-password-container {
+            display: flex; flex-direction: column; width: 100%;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
             opacity: 0;
             height: 0;
             visibility: hidden;
-            padding: 0;
             margin-top: 0;
           }
-          #dev-password-input.active {
+          .dev-password-container.active, .public-password-container.active {
             opacity: 1;
             height: auto;
             visibility: visible;
-            padding: 0.5rem;
-            margin-top: 1rem;
+            margin-top: 10px;
           }
 
-          .page-container h1, .page-container p { color: var(--text-color); }
+          .page-container h1, .page-container p, .page-container label { color: var(--text-color); }
           input[type="text"], input[type="password"] { 
             padding: 0.5rem; font-size: 1rem; 
             border: 1px solid var(--input-border); 
@@ -148,22 +134,27 @@ module.exports = (redis, upload, uploadFolder) => {
             color: var(--text-color);
             transition: background-color 0.3s, border-color 0.3s, color 0.3s;
             width: 100%;
+            box-sizing: border-box;
           }
           button { 
             padding: 0.75rem 1.5rem; font-size: 1rem; color: white; 
             background-color: var(--button-primary-bg); 
             border: none; border-radius: 4px; cursor: pointer;
             transition: background-color 0.3s;
+            width: 100%;
           }
           button:hover { background-color: var(--button-primary-hover-bg); }
+          .message { margin-top: 10px; }
 
           /* Estilos da Página de Sala (Sem alteração) */
           .main-content { display: flex; gap: 20px; }
           .left-column { flex: 2; display: flex; flex-direction: column; gap: 20px; }
           .right-column { flex: 1; display: flex; flex-direction: column; gap: 20px; background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.1); }
           html.dark-mode .right-column { background: #222; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); }
+
           .container h1, .container h2, .container p, .container label { color: var(--text-color); }
           hr { margin: 2rem 0; border: 0; border-top: 1px solid var(--input-border); }
+
           textarea { 
             width: 100%; min-height: 400px; font-size: 1rem; padding: 1rem; box-sizing: border-box; 
             border: 1px solid var(--input-border); border-radius: 4px; resize: none; 
@@ -207,15 +198,24 @@ module.exports = (redis, upload, uploadFolder) => {
             <p>Insira a chave da sala para entrar:</p>
             ${errorMessage}
             <form id="key-form" action="/sala" method="GET">
-              <input type="text" name="senha" id="sala-senha" placeholder="Ex: minha-sala" required />
+              <div class="input-group">
+                <input type="text" name="senha" id="sala-senha" placeholder="Ex: minha-sala" required />
+                
+                <div class="dev-mode-switch-container">
+                  <span class="switch-text">Modo Desenvolvedor</span>
+                  <input type="checkbox" id="dev-mode-toggle" class="dark-mode-input dev-mode-input">
+                  <label for="dev-mode-toggle" class="switch-label"></label>
+                </div>
 
-              <div class="dev-mode-container">
-                <label for="dev-mode-toggle">Modo Desenvolvedor</label>
-                <input type="checkbox" id="dev-mode-toggle">
+                <div class="dev-password-container" id="dev-password-container">
+                  <input type="password" name="dev_pass" id="dev-password-input" placeholder="Senha do desenvolvedor" />
+                </div>
+                <div class="public-password-container" id="public-password-container">
+                  <input type="text" name="public_pass" id="public-password-input" placeholder="Senha para o público" />
+                </div>
+                
+                <button type="submit">Entrar</button>
               </div>
-              <input type="password" name="dev_pass" id="dev-password-input" placeholder="Senha do desenvolvedor" />
-
-              <button type="submit">Entrar</button>
             </form>
           </div>
         </div>
@@ -251,6 +251,8 @@ module.exports = (redis, upload, uploadFolder) => {
 
           // Lógica da Tela de Seleção de Sala
           const devModeToggle = document.getElementById("dev-mode-toggle");
+          const devPasswordContainer = document.getElementById("dev-password-container");
+          const publicPasswordContainer = document.getElementById("public-password-container");
           const devPasswordInput = document.getElementById("dev-password-input");
           const salaSenhaInput = document.getElementById("sala-senha");
           const keyForm = document.getElementById("key-form");
@@ -258,19 +260,21 @@ module.exports = (redis, upload, uploadFolder) => {
 
           devModeToggle.addEventListener("change", () => {
             if (devModeToggle.checked) {
-              devPasswordInput.classList.add("active");
+              devPasswordContainer.classList.add("active");
+              publicPasswordContainer.classList.add("active");
               devPasswordInput.required = true;
             } else {
-              devPasswordInput.classList.remove("active");
+              devPasswordContainer.classList.remove("active");
+              publicPasswordContainer.classList.remove("active");
               devPasswordInput.required = false;
             }
           });
           
           keyForm.addEventListener("submit", (e) => {
-            if (devModeToggle.checked) {
-              if (devPasswordInput.value !== devPassword) {
+            if (salaSenhaInput.value.toLowerCase().startsWith('dev')) {
+              if (!devModeToggle.checked || devPasswordInput.value !== devPassword) {
                 e.preventDefault();
-                alert("Senha de desenvolvedor incorreta!");
+                alert("Erro: sala exclusiva para desenvolvedores");
               } else {
                 salaSenhaInput.value = "DEV-" + salaSenhaInput.value;
               }
@@ -284,16 +288,12 @@ module.exports = (redis, upload, uploadFolder) => {
 
   // Rota para a página do editor de texto e arquivos
   router.get("/sala", async (req, res) => {
-    const { senha, dev_pass } = req.query; // Pega a senha e a flag dev_pass
+    const { senha } = req.query;
     if (!senha) {
       return res.redirect("/compartilhar");
     }
 
-    // NOVO: Regra para proibir salas que começam com 'dev'
-    if (senha.toLowerCase().startsWith('dev-') && dev_pass !== 'git push -u origin main') {
-        return res.redirect("/compartilhar?erro=dev_exclusive");
-    }
-
+    // A validação de sala foi movida para o frontend
     try {
       const conteudo = await redis.get(`sala:${senha}`);
       const arquivos = await redis.lrange(`arquivos:${senha}`, 0, -1);
@@ -306,12 +306,6 @@ module.exports = (redis, upload, uploadFolder) => {
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Sala: ${senha}</title>
-          <script>
-            // Aplica o tema imediatamente
-            if (localStorage.getItem('dark-mode') === 'enabled') {
-              document.documentElement.classList.add('dark-mode');
-            }
-          </script>
           <style>
             /* Variáveis CSS para cores */
             :root {
@@ -359,8 +353,6 @@ module.exports = (redis, upload, uploadFolder) => {
               color: var(--text-color); 
               transition: background-color 0.3s, color 0.3s; 
             }
-
-            /* Barra Superior */
             .top-bar {
               position: fixed; top: 0; left: 0; width: 100%;
               background-color: var(--top-bar-bg);
@@ -629,7 +621,7 @@ module.exports = (redis, upload, uploadFolder) => {
     }
   });
 
-  // ---------- ROTAS DA API ----------
+  // ---------- NOVAS ROTAS DA API ----------
   router.delete("/api/sala/:senha/arquivo/:nome", async (req, res) => {
     try {
       const { senha, nome } = req.params;
@@ -649,7 +641,6 @@ module.exports = (redis, upload, uploadFolder) => {
     }
   });
 
-  // Rota de criação/atualização de texto
   router.post("/api/sala/:senha", async (req, res) => {
     try {
       const { senha } = req.params;
@@ -670,7 +661,6 @@ module.exports = (redis, upload, uploadFolder) => {
     }
   });
 
-  // Rota de upload de arquivos
   router.post("/api/sala/:senha/upload", (req, res) => {
     try {
       upload.single("arquivo")(req, res, async (err) => {
@@ -692,7 +682,6 @@ module.exports = (redis, upload, uploadFolder) => {
     }
   });
 
-  // Rota para buscar a lista de arquivos
   router.get("/api/sala/:senha/arquivos", async (req, res) => {
     try {
       const arquivos = await redis.lrange(`arquivos:${req.params.senha}`, 0, -1);
@@ -703,7 +692,6 @@ module.exports = (redis, upload, uploadFolder) => {
     }
   });
 
-  // Rota para download de arquivos
   router.get("/sala/:senha/arquivo/:nome", async (req, res) => {
     try {
       const { nome } = req.params;

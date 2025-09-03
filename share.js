@@ -4,9 +4,12 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// Use 'router' em vez de 'app' para as rotas
 const router = express.Router();
 
+// A CONEXÃO COM O REDIS E O MULTER DEVEM FICAR NO ARQUIVO SERVER.JS
+// Para que as rotas aqui funcionem, vamos assumir que o server.js
+// irá passar essas dependências ou que elas serão acessíveis globalmente.
+// Para este exemplo, as deixaremos aqui, mas o ideal é a centralização.
 const redis = new Redis(process.env.REDIS_PUBLIC_URL || process.env.REDIS_URL);
 const uploadFolder = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadFolder)) fs.mkdirSync(uploadFolder);
@@ -16,9 +19,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-
-// ---------- FUNÇÃO PARA LIMPAR ARQUIVOS EXPIRADOS (A ser movida para server.js) ----------
-// mudar para o server.js seria melhor
+// ---------- FUNÇÃO PARA LIMPAR ARQUIVOS EXPIRADOS (MOVER PARA server.js) ----------
 async function deleteExpiredFiles() {
   console.log("Executando a limpeza de arquivos expirados...");
   const stream = redis.scanStream({ match: 'arquivos:*' });
@@ -47,7 +48,8 @@ async function deleteExpiredFiles() {
   stream.on('end', () => console.log("Limpeza de arquivos concluída."));
 }
 
-// Rota para a página do editor de texto
+// ---------- ROTAS PRINCIPAIS ----------
+
 router.get("/sala", async (req, res) => {
   const { senha } = req.query;
   if (!senha) {
@@ -179,7 +181,7 @@ router.get("/sala", async (req, res) => {
   }
 });
 
-// ---------- ROTAS DA API (para manipulação de dados) ----------
+// ---------- ROTAS DA API (mude app para router) ----------
 router.post("/api/sala/:senha", async (req, res) => {
   try {
     const { senha } = req.params;
@@ -230,4 +232,5 @@ router.get("/sala/:senha/arquivo/:nome", async (req, res) => {
   }
 });
 
+// ---------- EXPORTAÇÃO DO ROUTER ----------
 module.exports = router;

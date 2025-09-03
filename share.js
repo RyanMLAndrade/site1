@@ -33,7 +33,7 @@ module.exports = (redis, upload, uploadFolder) => {
         </div>
       </body>
       </html>
-  `);
+    `);
   });
 
   // Rota para a página do editor de texto e arquivos
@@ -56,10 +56,49 @@ module.exports = (redis, upload, uploadFolder) => {
           <title>Sala: ${senha}</title>
           <style>
             /* Reset básico */
-            body { font-family: sans-serif; padding: 2rem; background-color: #f4f4f4; color: #333; transition: background-color 0.3s, color 0.3s; }
-            .container { max-width: 1200px; margin: auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background 0.3s, box-shadow 0.3s; }
+            body { font-family: sans-serif; margin: 0; padding-top: 70px; /* Espaço para a barra superior */ background-color: #f4f4f4; color: #333; transition: background-color 0.3s, color 0.3s; }
+            .container { max-width: 1200px; margin: 20px auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background 0.3s, box-shadow 0.3s; }
             h1 { text-align: center; margin-bottom: 1rem; }
             hr { margin: 2rem 0; border: 0; border-top: 1px solid #ccc; }
+
+            /* Barra Superior */
+            .top-bar {
+              position: fixed; top: 0; left: 0; width: 100%;
+              background-color: #f8f9fa; /* Cor clara */
+              padding: 10px 20px;
+              display: flex; justify-content: flex-end; /* Alinhar itens à direita */
+              align-items: center;
+              box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+              z-index: 1000;
+              box-sizing: border-box;
+              transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
+            }
+            body.dark-mode .top-bar {
+              background-color: #2c2c2c; /* Cor escura */
+              box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            }
+            .top-bar-content {
+                display: flex;
+                gap: 20px; /* Espaço entre os elementos da barra */
+                align-items: center;
+            }
+
+            /* Botão Voltar */
+            .back-button {
+              background-color: #6c757d;
+              color: white;
+              border: none;
+              padding: 8px 15px;
+              border-radius: 5px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              text-decoration: none;
+              transition: background-color 0.3s;
+            }
+            .back-button:hover { background-color: #5a6268; }
+            .back-button span { margin-right: 5px; font-size: 1.2em; line-height: 1; } /* Estilo da seta */
+
 
             /* Modo Escuro */
             body.dark-mode { background-color: #121212; color: #e0e0e0; }
@@ -75,12 +114,11 @@ module.exports = (redis, upload, uploadFolder) => {
 
             /* Switch de Modo Escuro */
             .dark-mode-switch { 
-              position: fixed; top: 20px; right: 20px; z-index: 100;
-              display: flex; align-items: center; /* <-- CORRIGIDO: Alinhar texto e switch */
-              gap: 10px; /* <-- CORRIGIDO: Espaço entre o texto e o switch */
+              display: flex; align-items: center;
+              gap: 10px; 
             }
-            .switch-text { color: #555; transition: color 0.3s; } /* <-- NOVO: Estilo para o texto */
-            body.dark-mode .switch-text { color: #ccc; } /* <-- NOVO: Estilo para o texto no modo escuro */
+            .switch-text { color: #555; transition: color 0.3s; }
+            body.dark-mode .switch-text { color: #ccc; }
             .switch-label { display: block; cursor: pointer; text-indent: -9999px; width: 50px; height: 25px; background: grey; border-radius: 100px; position: relative; }
             .switch-label:after { content: ''; position: absolute; top: 2px; left: 2px; width: 21px; height: 21px; background: #fff; border-radius: 90px; transition: 0.3s; }
             .dark-mode-input:checked + .switch-label { background: #007bff; }
@@ -115,10 +153,17 @@ module.exports = (redis, upload, uploadFolder) => {
           </style>
         </head>
         <body>
-          <div class="dark-mode-switch">
-            <span class="switch-text" id="dark-mode-label">Modo Escuro ☀︎</span>
-            <input type="checkbox" class="dark-mode-input" id="dark-mode-toggle">
-            <label class="switch-label" for="dark-mode-toggle">Toggle</label>
+          <div class="top-bar">
+            <div class="top-bar-content">
+              <div class="dark-mode-switch">
+                <span class="switch-text" id="dark-mode-label">Modo Escuro ☀︎</span>
+                <input type="checkbox" class="dark-mode-input" id="dark-mode-toggle">
+                <label class="switch-label" for="dark-mode-toggle">Toggle</label>
+              </div>
+              <a href="/" class="back-button">
+                <span>&#11013;</span> Voltar
+              </a>
+            </div>
           </div>
 
           <div class="container">

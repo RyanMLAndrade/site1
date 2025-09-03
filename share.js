@@ -6,34 +6,34 @@ const fs = require("fs");
 module.exports = (redis, upload, uploadFolder) => {
   // Rota para a página de entrada da senha
   router.get("/compartilhar", (req, res) => {
-      res.send(`
-        <!DOCTYPE html>
-        <html lang="pt-br">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Bem-vindo!</title>
-          <style>
-            body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f4f4; }
-            .container { text-align: center; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-            input[type="text"] { padding: 0.5rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; margin-top: 1rem; }
-            button { padding: 0.75rem 1.5rem; font-size: 1rem; color: white; background-color: #007bff; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem; }
-            button:hover { background-color: #0056b3; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>Compartilhador de Texto e Arquivos</h1>
-            <p>Insira a chave da sala para entrar:</p>
-            <form id="key-form" action="/sala" method="GET">
-              <input type="text" name="senha" id="sala-senha" placeholder="Ex: minha-sala" required />
-              <br>
-              <button type="submit">Entrar</button>
-            </form>
-          </div>
-        </body>
-        </html>
-    `);
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="pt-br">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bem-vindo!</title>
+        <style>
+          body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f4f4; }
+          .container { text-align: center; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          input[type="text"] { padding: 0.5rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; margin-top: 1rem; }
+          button { padding: 0.75rem 1.5rem; font-size: 1rem; color: white; background-color: #007bff; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem; }
+          button:hover { background-color: #0056b3; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Compartilhador de Texto e Arquivos</h1>
+          <p>Insira a chave da sala para entrar:</p>
+          <form id="key-form" action="/sala" method="GET">
+            <input type="text" name="senha" id="sala-senha" placeholder="Ex: minha-sala" required />
+            <br>
+            <button type="submit">Entrar</button>
+          </form>
+        </div>
+      </body>
+      </html>
+  `);
   });
 
   // Rota para a página do editor de texto e arquivos
@@ -46,7 +46,7 @@ module.exports = (redis, upload, uploadFolder) => {
     try {
       const conteudo = await redis.get(`sala:${senha}`);
       const arquivos = await redis.lrange(`arquivos:${senha}`, 0, -1);
-      
+
       res.send(`
         <!DOCTYPE html>
         <html lang="pt-br">
@@ -74,7 +74,13 @@ module.exports = (redis, upload, uploadFolder) => {
             body.dark-mode .file-item a { color: #87cefa; }
 
             /* Switch de Modo Escuro */
-            .dark-mode-switch { position: fixed; top: 20px; right: 20px; z-index: 100; }
+            .dark-mode-switch { 
+              position: fixed; top: 20px; right: 20px; z-index: 100;
+              display: flex; align-items: center; /* <-- CORRIGIDO: Alinhar texto e switch */
+              gap: 10px; /* <-- CORRIGIDO: Espaço entre o texto e o switch */
+            }
+            .switch-text { color: #555; transition: color 0.3s; } /* <-- NOVO: Estilo para o texto */
+            body.dark-mode .switch-text { color: #ccc; } /* <-- NOVO: Estilo para o texto no modo escuro */
             .switch-label { display: block; cursor: pointer; text-indent: -9999px; width: 50px; height: 25px; background: grey; border-radius: 100px; position: relative; }
             .switch-label:after { content: ''; position: absolute; top: 2px; left: 2px; width: 21px; height: 21px; background: #fff; border-radius: 90px; transition: 0.3s; }
             .dark-mode-input:checked + .switch-label { background: #007bff; }
@@ -110,6 +116,7 @@ module.exports = (redis, upload, uploadFolder) => {
         </head>
         <body>
           <div class="dark-mode-switch">
+            <span class="switch-text" id="dark-mode-label">Modo Escuro ☀︎</span>
             <input type="checkbox" class="dark-mode-input" id="dark-mode-toggle">
             <label class="switch-label" for="dark-mode-toggle">Toggle</label>
           </div>
@@ -146,21 +153,33 @@ module.exports = (redis, upload, uploadFolder) => {
           </div>
 
           <script>
-            // Lógica do Modo Escuro
+            // Lógica do Modo Escuro (agora com a atualização do emoji)
             const darkModeToggle = document.getElementById("dark-mode-toggle");
+            const darkModeLabel = document.getElementById("dark-mode-label");
             const body = document.body;
-            const isDarkMode = localStorage.getItem('dark-mode') === 'enabled';
-            if (isDarkMode) {
-              body.classList.add('dark-mode');
-              darkModeToggle.checked = true;
+
+            function updateDarkModeUI(isDarkMode) {
+                if (isDarkMode) {
+                    body.classList.add('dark-mode');
+                    darkModeLabel.textContent = "Modo Escuro ☾";
+                    darkModeToggle.checked = true;
+                } else {
+                    body.classList.remove('dark-mode');
+                    darkModeLabel.textContent = "Modo Escuro ☀︎";
+                    darkModeToggle.checked = false;
+                }
             }
+
+            const isDarkMode = localStorage.getItem('dark-mode') === 'enabled';
+            updateDarkModeUI(isDarkMode);
+
             darkModeToggle.addEventListener('change', () => {
               if (darkModeToggle.checked) {
-                body.classList.add('dark-mode');
                 localStorage.setItem('dark-mode', 'enabled');
+                updateDarkModeUI(true);
               } else {
-                body.classList.remove('dark-mode');
                 localStorage.setItem('dark-mode', 'disabled');
+                updateDarkModeUI(false);
               }
             });
 

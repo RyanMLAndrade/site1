@@ -22,14 +22,11 @@ module.exports = (redis, upload, uploadFolder) => {
             --container-shadow: rgba(0,0,0,0.1);
             --top-bar-bg: #f8f9fa;
             --top-bar-shadow: rgba(0,0,0,0.1);
+            --button-bg-hover: #e9ecef;
             --button-primary-bg: #007bff;
             --button-primary-hover-bg: #0056b3;
             --input-bg: white;
             --input-border: #ccc;
-            --right-column-bg: #f9f9f9;
-            --right-column-shadow: rgba(0,0,0,0.1);
-            --file-item-bg: #eee;
-            --file-item-link-color: #007bff;
           }
 
           body.dark-mode {
@@ -39,17 +36,14 @@ module.exports = (redis, upload, uploadFolder) => {
             --container-shadow: rgba(0,0,0,0.3);
             --top-bar-bg: #2c2c2c;
             --top-bar-shadow: rgba(0,0,0,0.3);
-            --button-primary-bg: #444;
-            --button-primary-hover-bg: #555;
+            --button-bg-hover: #444;
+            --button-primary-bg: #007bff;
+            --button-primary-hover-bg: #0056b3;
             --input-bg: #2c2c2c;
             --input-border: #555;
-            --right-column-bg: #222;
-            --right-column-shadow: rgba(0,0,0,0.3);
-            --file-item-bg: #282828;
-            --file-item-link-color: #87cefa;
           }
 
-          /* Estilos globais */
+          /* Estilos universais para a barra superior */
           body { 
             font-family: sans-serif; 
             margin: 0; 
@@ -58,8 +52,6 @@ module.exports = (redis, upload, uploadFolder) => {
             color: var(--text-color); 
             transition: background-color 0.3s, color 0.3s; 
           }
-
-          /* Barra Superior */
           .top-bar {
             position: fixed; top: 0; left: 0; width: 100%;
             background-color: var(--top-bar-bg);
@@ -73,7 +65,7 @@ module.exports = (redis, upload, uploadFolder) => {
           }
           .top-bar-left, .top-bar-right { display: flex; align-items: center; gap: 20px; }
 
-          /* Botão Voltar */
+          /* Estilos do Botão Voltar */
           .back-button {
             background-color: transparent;
             color: var(--text-color);
@@ -457,4 +449,180 @@ module.exports = (redis, upload, uploadFolder) => {
             // Lógica de manipulação de texto e arquivos
             const editor = document.getElementById("text-editor");
             const saveBtn = document.getElementById("save-btn");
-            const
+            const copyBtn = document.getElementById("copy-btn");
+            const statusMessage = document.getElementById("status-message");
+            const uploadForm = document.getElementById("upload-form");
+            const fileList = document.getElementById("file-list");
+            const salaSenha = "${senha}";
+
+            saveBtn.addEventListener("click", async () => {
+              const conteudo = editor.value;
+              statusMessage.textContent = "Salvando...";
+              try {
+                const response = await fetch(\`/api/sala/\${salaSenha}\`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ conteudo })
+                });
+                if (response.ok) {
+                  statusMessage.textContent = "Texto salvo com sucesso!";
+                } else {
+                  statusMessage.textContent = "Erro ao salvar o texto.";
+                }
+              } catch (err) {
+                statusMessage.textContent = "Erro interno do servidor.";
+                console.error(err);
+              }
+            });
+
+            copyBtn.addEventListener("click", () => {
+              editor.select();
+              document.execCommand("copy");
+              statusMessage.textContent = "Texto copiado para a área de transferência!";
+            });
+
+            uploadForm.addEventListener("submit", async (e) => {
+              e.preventDefault();
+              const formData = new FormData(uploadForm);
+              try {
+                const response = await fetch(\`/api/sala/\${salaSenha}/upload\`, {
+                  method: "POST",
+                  body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                  statusMessage.textContent = "Arquivo enviado com sucesso!";
+                  fetchFiles();
+                } else {
+                  statusMessage.textContent = \`Erro: \${result.erro}\`;
+                }
+              } catch (err) {
+                statusMessage.textContent = "Erro ao enviar o arquivo.";
+                console.error(err);
+              }
+            });
+
+            // Lógica para Excluir Arquivos
+            fileList.addEventListener("click", async (e) => {
+              if (e.target.classList.contains("delete-file-btn")) {
+                const filename = e.target.getAttribute("data-filename");
+                const confirmed = confirm(\`Tem certeza que deseja excluir o arquivo \${filename}?\`);
+                if (!confirmed) return;
+
+                statusMessage.textContent = "Excluindo arquivo...";
+                try {
+                  const response = await fetch(\`/api/sala/\${salaSenha}/arquivo/\${filename}\`, {
+                    method: "DELETE"
+                  });
+                  if (response.ok) {
+                    statusMessage.textContent = "Arquivo excluído com sucesso!";
+                    fetchFiles();
+                  } else {
+                    const result = await response.json();
+                    statusMessage.textContent = \`Erro: \${result.erro}\`;
+                  }
+                } catch (err) {
+                  statusMessage.textContent = "Erro ao excluir o arquivo.";
+                  console.error(err);
+                }
+              }
+            });
+
+            async function fetchFiles() {
+              try {
+                const response = await fetch(\`/api/sala/\${salaSenha}/arquivos\`);
+                const data = await response.json();
+                fileList.innerHTML = data.arquivos.map(file =>  
+                  \`
+                  <li class="file-item">
+                    <a href="/sala/\${salaSenha}/arquivo/\${file}" target="_blank">\${file}</a>
+                    <button class="delete-file-btn" data-filename="\${file}">Excluir</button>
+                  </li>
+                  \`
+                ).join('');
+              } catch (err) {
+                console.error("Erro ao buscar arquivos:", err);
+              }
+            }
+          </script>
+        </body>
+        </html>
+      `);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Erro interno do servidor.");
+    }
+  });
+
+  // ---------- NOVAS ROTAS DA API ----------
+  router.delete("/api/sala/:senha/arquivo/:nome", async (req, res) => {
+    try {
+      const { senha, nome } = req.params;
+      const filePath = path.join(uploadFolder, nome);
+      await redis.lrem(`arquivos:${senha}`, 0, nome);
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error(`Erro ao apagar o arquivo físico ${filePath}:`, err);
+          return res.status(500).send({ erro: "Erro ao apagar o arquivo" });
+        }
+        console.log(`Arquivo físico ${filePath} apagado com sucesso.`);
+        res.status(200).send({ status: "ok", mensagem: "Arquivo excluído com sucesso!" });
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({ erro: "Erro interno do servidor." });
+    }
+  });
+
+  router.post("/api/sala/:senha", async (req, res) => {
+    try {
+      const { senha } = req.params;
+      const { conteudo } = req.body;
+      if (!conteudo) return res.status(400).send({ erro: "Conteúdo vazio" });
+      await redis.set(`sala:${senha}`, conteudo, "EX", 3600);
+      res.status(200).send({ status: "ok" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({ erro: "Erro interno do servidor." });
+    }
+  });
+
+  router.post("/api/sala/:senha/upload", (req, res) => {
+    try {
+      upload.single("arquivo")(req, res, async (err) => {
+        if (err) return res.status(400).send({ erro: "Erro no upload" });
+        if (!req.file) return res.status(400).send({ erro: "Nenhum arquivo enviado" });
+        await redis.lpush(`arquivos:${req.params.senha}`, req.file.filename);
+        await redis.expire(`arquivos:${req.params.senha}`, 3600);
+        res.status(200).send({ status: "ok", mensagem: "Arquivo enviado!" });
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({ erro: "Erro interno do servidor." });
+    }
+  });
+
+  router.get("/api/sala/:senha/arquivos", async (req, res) => {
+    try {
+      const arquivos = await redis.lrange(`arquivos:${req.params.senha}`, 0, -1);
+      res.send({ arquivos });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({ erro: "Erro interno do servidor." });
+    }
+  });
+
+  router.get("/sala/:senha/arquivo/:nome", async (req, res) => {
+    try {
+      const { nome } = req.params;
+      const filePath = path.join(uploadFolder, nome);
+      if (!fs.existsSync(filePath)) return res.status(404).send({ erro: "Arquivo não encontrado" });
+      res.download(filePath);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Erro interno do servidor.");
+    }
+  });
+
+  return router;
+};

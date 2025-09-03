@@ -4,26 +4,21 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-const app = express();
+// Use 'router' em vez de 'app' para as rotas
+const router = express.Router();
 
-// Conecta ao Redis
 const redis = new Redis(process.env.REDIS_PUBLIC_URL || process.env.REDIS_URL);
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Pasta temporária para arquivos
 const uploadFolder = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadFolder)) fs.mkdirSync(uploadFolder);
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadFolder),
   filename: (req, file, cb) => cb(null, file.originalname),
 });
 const upload = multer({ storage });
 
-// ---------- FUNÇÃO PARA LIMPAR ARQUIVOS EXPIRADOS ----------
 
+// ---------- FUNÇÃO PARA LIMPAR ARQUIVOS EXPIRADOS (A ser movida para server.js) ----------
+// mudar para o server.js seria melhor
 async function deleteExpiredFiles() {
   console.log("Executando a limpeza de arquivos expirados...");
   const stream = redis.scanStream({ match: 'arquivos:*' });
@@ -52,43 +47,8 @@ async function deleteExpiredFiles() {
   stream.on('end', () => console.log("Limpeza de arquivos concluída."));
 }
 
-
-// ---------- ROTAS PRINCIPAIS ----------
-
-// Rota inicial para inserir a chave da sala
-app.get("/", (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="pt-br">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Bem-vindo!</title>
-      <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f4f4; }
-        .container { text-align: center; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input[type="text"] { padding: 0.5rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; margin-top: 1rem; }
-        button { padding: 0.75rem 1.5rem; font-size: 1rem; color: white; background-color: #007bff; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem; }
-        button:hover { background-color: #0056b3; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h1>Compartilhador de Texto e Arquivos</h1>
-        <p>Insira a chave da sala para entrar:</p>
-        <form id="key-form" action="/sala" method="GET">
-          <input type="text" name="senha" id="sala-senha" placeholder="Ex: minha-sala" required />
-          <br>
-          <button type="submit">Entrar</button>
-        </form>
-      </div>
-    </body>
-    </html>
-  `);
-});
-
 // Rota para a página do editor de texto
-app.get("/sala", async (req, res) => {
+router.get("/sala", async (req, res) => {
   const { senha } = req.query;
   if (!senha) {
     return res.redirect("/");
@@ -220,14 +180,11 @@ app.get("/sala", async (req, res) => {
 });
 
 // ---------- ROTAS DA API (para manipulação de dados) ----------
-
-app.post("/api/sala/:senha", async (req, res) => {
+router.post("/api/sala/:senha", async (req, res) => {
   try {
     const { senha } = req.params;
     const { conteudo } = req.body;
     if (!conteudo) return res.status(400).send({ erro: "Conteúdo vazio" });
-
-    // Expira em 1 hora
     await redis.set(`sala:${senha}`, conteudo, "EX", 3600); 
     res.status(200).send({ status: "ok" });
   } catch (err) {
@@ -236,17 +193,13 @@ app.post("/api/sala/:senha", async (req, res) => {
   }
 });
 
-app.post("/api/sala/:senha/upload", async (req, res) => {
+router.post("/api/sala/:senha/upload", async (req, res) => {
   try {
     upload.single("arquivo")(req, res, async (err) => {
       if (err) return res.status(400).send({ erro: "Erro no upload" });
       if (!req.file) return res.status(400).send({ erro: "Nenhum arquivo enviado" });
-
-      // Adiciona o nome do arquivo à lista no Redis
       await redis.lpush(`arquivos:${req.params.senha}`, req.file.filename);
-      // Define a expiração da lista de arquivos para 1 hora
       await redis.expire(`arquivos:${req.params.senha}`, 3600);
-
       res.status(200).send({ status: "ok", mensagem: "Arquivo enviado!" });
     });
   } catch (err) {
@@ -255,7 +208,7 @@ app.post("/api/sala/:senha/upload", async (req, res) => {
   }
 });
 
-app.get("/api/sala/:senha/arquivos", async (req, res) => {
+router.get("/api/sala/:senha/arquivos", async (req, res) => {
   try {
     const arquivos = await redis.lrange(`arquivos:${req.params.senha}`, 0, -1);
     res.send({ arquivos });
@@ -265,7 +218,7 @@ app.get("/api/sala/:senha/arquivos", async (req, res) => {
   }
 });
 
-app.get("/sala/:senha/arquivo/:nome", async (req, res) => {
+router.get("/sala/:senha/arquivo/:nome", async (req, res) => {
   try {
     const { nome } = req.params;
     const filePath = path.join(uploadFolder, nome);
@@ -277,10 +230,4 @@ app.get("/sala/:senha/arquivo/:nome", async (req, res) => {
   }
 });
 
-// ---------- START SERVER ----------
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Servidor rodando na porta ${port}`));
-
-// ---------- AGENDAMENTO DE LIMPEZA ----------
-// Agenda a execução da função de limpeza a cada 10 minutos (600000 ms).
-setInterval(deleteExpiredFiles, 600000);
+module.exports = router;

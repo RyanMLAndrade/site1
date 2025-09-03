@@ -16,7 +16,7 @@ router.get("/", (req, res) => {
           position: fixed; top: 0; left: 0; width: 100%;
           background-color: #f8f9fa;
           padding: 10px 20px;
-          display: flex; justify-content: space-between; /* Espaço entre os elementos */
+          display: flex; justify-content: space-between;
           align-items: center;
           box-shadow: 0 2px 5px rgba(0,0,0,0.1);
           z-index: 1000;
@@ -57,18 +57,27 @@ router.get("/", (req, res) => {
         .dark-mode-input:checked + .switch-label { background: #007bff; }
         .dark-mode-input:checked + .switch-label:after { left: calc(100% - 2px); transform: translateX(-100%); }
         .dark-mode-input { display: none; }
-        
+
         /* Estilos da Página */
         .container { text-align: center; max-width: 800px; width: 100%; margin: 0 auto; }
-        h1 { margin-bottom: 20px; font-size: 2.5rem; color: #333; }
-        p { margin-bottom: 40px; font-size: 1.2rem; color: #555; }
-        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-        .feature-box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transition: transform 0.3s ease; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        h1, p { color: #333; }
+        .feature-box { background: white; color: #333; transition: background 0.3s, color 0.3s; }
+        .feature-box a { color: inherit; }
+
+        /* Modo Escuro da Página */
+        body.dark-mode h1, body.dark-mode p { color: #e0e0e0; }
+        body.dark-mode .container { background: #1e1e1e; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        body.dark-mode .feature-box { background: #282828; color: #e0e0e0; }
+        body.dark-mode .feature-box a { color: #e0e0e0; }
+
+        /* Outros estilos */
+        .feature-box { padding: 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transition: transform 0.3s ease; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .feature-box:hover { transform: translateY(-5px); }
-        .feature-box a { text-decoration: none; color: inherit; font-weight: bold; }
+        .feature-box a { text-decoration: none; font-weight: bold; }
         .feature-box a:hover { text-decoration: underline; }
         .coming-soon { opacity: 0.6; cursor: not-allowed; }
         .coming-soon:hover { transform: none; }
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
       </style>
     </head>
     <body>

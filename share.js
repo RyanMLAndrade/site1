@@ -33,19 +33,8 @@ module.exports = (redis, upload, uploadFolder) => {
           }
           .top-bar-left { display: flex; align-items: center; }
           .top-bar-right { display: flex; align-items: center; gap: 20px; }
-
-          /* Estilos do Botão Voltar */
           .back-button {
-            background-color: transparent;
-            color: #333;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            transition: background-color 0.3s, color 0.3s;
+            background-color: transparent; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; text-decoration: none; transition: background-color 0.3s, color 0.3s;
           }
           .back-button span { font-size: 1.2em; line-height: 1; }
           .back-button:hover { background-color: #e9ecef; }
@@ -68,10 +57,47 @@ module.exports = (redis, upload, uploadFolder) => {
             text-align: center; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
             max-width: 500px; margin: 0 auto; 
           }
+          /* Corrigido: Modo escuro para todos os elementos da página de entrada */
           body.dark-mode .page-container { background: #1e1e1e; }
+          body.dark-mode .page-container h1, 
+          body.dark-mode .page-container p { color: #e0e0e0; }
+          body.dark-mode .page-container input[type="text"] { background-color: #2c2c2c; border-color: #555; color: #e0e0e0; }
+
           input[type="text"] { padding: 0.5rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; margin-top: 1rem; }
           button { padding: 0.75rem 1.5rem; font-size: 1rem; color: white; background-color: #007bff; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem; }
           button:hover { background-color: #0056b3; }
+
+          /* Estilos da Página de Sala */
+          .main-content { display: flex; gap: 20px; }
+          .left-column { flex: 2; display: flex; flex-direction: column; gap: 20px; }
+          .right-column { flex: 1; display: flex; flex-direction: column; gap: 20px; background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.1); }
+          body.dark-mode .right-column { background: #222; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); }
+
+          body.dark-mode .container { background: #1e1e1e; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+          body.dark-mode h1, body.dark-mode h2, body.dark-mode p, body.dark-mode label { color: #e0e0e0; }
+          body.dark-mode textarea { background-color: #2c2c2c; border-color: #555; color: #e0e0e0; }
+          body.dark-mode input[type="file"] { color: #e0e0e0; }
+          body.dark-mode button { background-color: #444; color: #e0e0e0; }
+          body.dark-mode button:hover { background-color: #555; }
+          body.dark-mode hr { border-color: #444; }
+          body.dark-mode .file-item { background: #282828; }
+          body.dark-mode .file-item a { color: #87cefa; }
+          
+          textarea { width: 100%; min-height: 400px; font-size: 1rem; padding: 1rem; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; resize: none; }
+          #upload-form button { background-color: #28a745; color: white; }
+          #upload-form button:hover { background-color: #218838; }
+          .buttons { display: flex; justify-content: flex-end; gap: 1rem; }
+          button { padding: 0.75rem 1.5rem; font-size: 1rem; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
+          #save-btn { background-color: #28a745; }
+          #save-btn:hover { background-color: #218838; }
+          #copy-btn { background-color: #007bff; }
+          #copy-btn:hover { background-color: #0056b3; }
+          .message { text-align: center; margin-top: 1rem; color: #333; }
+          #file-list { list-style: none; padding: 0; }
+          .file-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: #eee; padding: 8px; border-radius: 4px; }
+          .file-item a { text-decoration: none; color: #007bff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .file-item button { padding: 5px 10px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; }
+          .file-item button:hover { background-color: #c82333; }
         </style>
       </head>
       <body>
@@ -274,7 +300,6 @@ module.exports = (redis, upload, uploadFolder) => {
           </div>
 
           <script>
-            // Lógica do Modo Escuro
             const darkModeToggle = document.getElementById("dark-mode-toggle");
             const darkModeLabel = document.getElementById("dark-mode-label");
             const body = document.body;
@@ -412,8 +437,6 @@ module.exports = (redis, upload, uploadFolder) => {
   });
 
   // ---------- NOVAS ROTAS DA API ----------
-
-  // Rota para apagar um arquivo
   router.delete("/api/sala/:senha/arquivo/:nome", async (req, res) => {
     try {
       const { senha, nome } = req.params;
@@ -433,7 +456,6 @@ module.exports = (redis, upload, uploadFolder) => {
     }
   });
 
-  // Rota de criação/atualização de texto
   router.post("/api/sala/:senha", async (req, res) => {
     try {
       const { senha } = req.params;
@@ -447,7 +469,6 @@ module.exports = (redis, upload, uploadFolder) => {
     }
   });
 
-  // Rota de upload de arquivos
   router.post("/api/sala/:senha/upload", (req, res) => {
     try {
       upload.single("arquivo")(req, res, async (err) => {
@@ -463,7 +484,6 @@ module.exports = (redis, upload, uploadFolder) => {
     }
   });
 
-  // Rota para buscar a lista de arquivos
   router.get("/api/sala/:senha/arquivos", async (req, res) => {
     try {
       const arquivos = await redis.lrange(`arquivos:${req.params.senha}`, 0, -1);
@@ -474,7 +494,6 @@ module.exports = (redis, upload, uploadFolder) => {
     }
   });
 
-  // Rota para download de arquivos
   router.get("/sala/:senha/arquivo/:nome", async (req, res) => {
     try {
       const { nome } = req.params;

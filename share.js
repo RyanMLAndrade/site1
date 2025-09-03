@@ -39,10 +39,6 @@ module.exports = (redis, upload, uploadFolder) => {
             --button-primary-hover-bg: #0056b3;
             --input-bg: white;
             --input-border: #ccc;
-            --right-column-bg: #f9f9f9;
-            --right-column-shadow: rgba(0,0,0,0.1);
-            --file-item-bg: #eee;
-            --file-item-link-color: #007bff;
           }
 
           html.dark-mode {
@@ -57,21 +53,10 @@ module.exports = (redis, upload, uploadFolder) => {
             --button-primary-hover-bg: #0056b3;
             --input-bg: #2c2c2c;
             --input-border: #555;
-            --right-column-bg: #222;
-            --right-column-shadow: rgba(0,0,0,0.3);
-            --file-item-bg: #282828;
-            --file-item-link-color: #87cefa;
           }
 
-          /* Estilos globais */
-          body { 
-            font-family: sans-serif; 
-            margin: 0; 
-            padding-top: 70px; 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            transition: background-color 0.3s, color 0.3s; 
-          }
+          /* Estilos universais para a barra superior */
+          body { font-family: sans-serif; margin: 0; padding-top: 70px; background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
           .top-bar {
             position: fixed; top: 0; left: 0; width: 100%;
             background-color: var(--top-bar-bg);
@@ -84,6 +69,8 @@ module.exports = (redis, upload, uploadFolder) => {
             transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
           }
           .top-bar-left, .top-bar-right { display: flex; align-items: center; gap: 20px; }
+
+          /* Estilos do Botão Voltar */
           .back-button {
             background-color: transparent;
             color: var(--text-color);
@@ -99,14 +86,15 @@ module.exports = (redis, upload, uploadFolder) => {
           .back-button span { font-size: 1.2em; line-height: 1; }
           .back-button:hover { background-color: var(--button-bg-hover); }
 
-          /* Switch de Modo Escuro */
-          .dark-mode-switch { display: flex; align-items: center; gap: 10px; }
+          /* Switch de Modo Escuro e Desenvolvedor */
+          .dark-mode-switch, .dev-mode-switch-container { display: flex; align-items: center; gap: 10px; }
           .switch-text { color: var(--text-color); transition: color 0.3s; }
           .switch-label { display: block; cursor: pointer; text-indent: -9999px; width: 50px; height: 25px; background: grey; border-radius: 100px; position: relative; }
           .switch-label:after { content: ''; position: absolute; top: 2px; left: 2px; width: 21px; height: 21px; background: #fff; border-radius: 90px; transition: 0.3s; }
           .dark-mode-input:checked + .switch-label { background: #007bff; }
           .dark-mode-input:checked + .switch-label:after { left: calc(100% - 2px); transform: translateX(-100%); }
           .dark-mode-input { display: none; }
+          .dev-mode-input:checked + .switch-label { background: #ffc107; }
           
           /* Estilos da Página de Entrada (Compartilhar) */
           .page-container { 
@@ -118,32 +106,26 @@ module.exports = (redis, upload, uploadFolder) => {
             max-width: 500px; margin: 0 auto; 
             transition: background 0.3s, box-shadow 0.3s;
           }
-          /* Layout mais quadrado para a tela de seleção de sala */
           .input-group {
-            display: flex; flex-direction: column; align-items: center; gap: 1rem;
-            max-width: 300px; margin: 0 auto;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            width: 300px; margin: 0 auto;
           }
-          .dev-mode-container {
-            display: flex; align-items: center; gap: 10px; margin-top: 1rem;
-          }
-          #dev-password-input {
-            width: 100%;
-            transition: opacity 0.3s ease-in-out;
+          .dev-password-container, .public-password-container {
+            display: flex; flex-direction: column; width: 100%;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
             opacity: 0;
             height: 0;
             visibility: hidden;
-            padding: 0;
             margin-top: 0;
           }
-          #dev-password-input.active {
+          .dev-password-container.active, .public-password-container.active {
             opacity: 1;
             height: auto;
             visibility: visible;
-            padding: 0.5rem;
-            margin-top: 1rem;
+            margin-top: 10px;
           }
 
-          .page-container h1, .page-container p { color: var(--text-color); }
+          .page-container h1, .page-container p, .page-container label { color: var(--text-color); }
           input[type="text"], input[type="password"] { 
             padding: 0.5rem; font-size: 1rem; 
             border: 1px solid var(--input-border); 
@@ -152,14 +134,17 @@ module.exports = (redis, upload, uploadFolder) => {
             color: var(--text-color);
             transition: background-color 0.3s, border-color 0.3s, color 0.3s;
             width: 100%;
+            box-sizing: border-box;
           }
           button { 
             padding: 0.75rem 1.5rem; font-size: 1rem; color: white; 
             background-color: var(--button-primary-bg); 
             border: none; border-radius: 4px; cursor: pointer;
             transition: background-color 0.3s;
+            width: 100%;
           }
           button:hover { background-color: var(--button-primary-hover-bg); }
+          .message { margin-top: 10px; }
 
           /* Estilos da Página de Sala (Sem alteração) */
           .main-content { display: flex; gap: 20px; }
@@ -176,16 +161,10 @@ module.exports = (redis, upload, uploadFolder) => {
             background-color: var(--input-bg); color: var(--text-color);
             transition: background-color 0.3s, border-color 0.3s, color 0.3s;
           }
-          
           #upload-form button { background-color: #28a745; color: white; }
           #upload-form button:hover { background-color: #218838; }
-
           .buttons { display: flex; justify-content: flex-end; gap: 1rem; }
-          button { 
-            padding: 0.75rem 1.5rem; font-size: 1rem; color: white; 
-            border: none; border-radius: 4px; cursor: pointer; 
-            transition: background-color 0.3s; 
-          }
+          button { padding: 0.75rem 1.5rem; font-size: 1rem; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
           #save-btn { background-color: #28a745; }
           #save-btn:hover { background-color: #218838; }
           #copy-btn { background-color: var(--button-primary-bg); }
@@ -221,7 +200,7 @@ module.exports = (redis, upload, uploadFolder) => {
             <form id="key-form" action="/sala" method="GET">
               <div class="input-group">
                 <input type="text" name="senha" id="sala-senha" placeholder="Ex: minha-sala" required />
-                
+
                 <div class="dev-mode-switch-container">
                   <span class="switch-text">Modo Desenvolvedor</span>
                   <input type="checkbox" id="dev-mode-toggle" class="dark-mode-input dev-mode-input">

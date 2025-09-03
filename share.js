@@ -19,12 +19,6 @@ module.exports = (redis, upload, uploadFolder) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Bem-vindo!</title>
-        <script>
-          // Aplica o tema imediatamente para evitar o "piscar"
-          if (localStorage.getItem('dark-mode') === 'enabled') {
-            document.documentElement.classList.add('dark-mode');
-          }
-        </script>
         <style>
           /* Variáveis CSS para cores */
           :root {
@@ -55,8 +49,15 @@ module.exports = (redis, upload, uploadFolder) => {
             --input-border: #555;
           }
 
-          /* Estilos universais para a barra superior */
-          body { font-family: sans-serif; margin: 0; padding-top: 70px; background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
+          /* Estilos globais */
+          body { 
+            font-family: sans-serif; 
+            margin: 0; 
+            padding-top: 70px; 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            transition: background-color 0.3s, color 0.3s; 
+          }
           .top-bar {
             position: fixed; top: 0; left: 0; width: 100%;
             background-color: var(--top-bar-bg);
@@ -106,6 +107,7 @@ module.exports = (redis, upload, uploadFolder) => {
             max-width: 500px; margin: 0 auto; 
             transition: background 0.3s, box-shadow 0.3s;
           }
+          /* Layout mais quadrado para a tela de seleção de sala */
           .input-group {
             display: flex; flex-direction: column; align-items: center; gap: 10px;
             width: 300px; margin: 0 auto;
@@ -221,6 +223,7 @@ module.exports = (redis, upload, uploadFolder) => {
         </div>
 
         <script>
+          // Lógica do Modo Escuro
           const darkModeToggle = document.getElementById("dark-mode-toggle");
           const darkModeLabel = document.getElementById("dark-mode-label");
           const rootElement = document.documentElement;
@@ -270,14 +273,20 @@ module.exports = (redis, upload, uploadFolder) => {
           });
           
           keyForm.addEventListener("submit", (e) => {
-            if (salaSenhaInput.value.toLowerCase().startsWith('dev')) {
-              if (!devModeToggle.checked || devPasswordInput.value !== devPassword) {
+            // Nova lógica: se o modo dev estiver ativado, prefixe a senha.
+            if (devModeToggle.checked) {
+              if (devPasswordInput.value !== devPassword) {
                 e.preventDefault();
-                alert("Erro: sala exclusiva para desenvolvedores");
+                alert("Senha de desenvolvedor incorreta!");
               } else {
                 salaSenhaInput.value = "DEV-" + salaSenhaInput.value;
               }
+            } else if (salaSenhaInput.value.toLowerCase().startsWith('dev')) {
+                // Nova lógica: impede o acesso a salas 'dev' se o modo não estiver ativo
+                e.preventDefault();
+                alert("Erro: sala exclusiva para desenvolvedores");
             }
+            // Se nenhum dos casos acima for verdadeiro, o formulário é enviado normalmente.
           });
         </script>
       </body>
@@ -287,16 +296,14 @@ module.exports = (redis, upload, uploadFolder) => {
 
   // Rota para a página do editor de texto e arquivos
   router.get("/sala", async (req, res) => {
-    const { senha, dev_pass } = req.query; // Pega a senha e a flag dev_pass
+    const { senha } = req.query; // Pega a senha
     if (!senha) {
       return res.redirect("/compartilhar");
     }
 
-    // A validação de sala foi movida para o frontend
     try {
       const conteudo = await redis.get(`sala:${senha}`);
       const arquivos = await redis.lrange(`arquivos:${senha}`, 0, -1);
-      const isDevRoom = senha.toLowerCase().startsWith('dev-');
 
       res.send(`
         <!DOCTYPE html>

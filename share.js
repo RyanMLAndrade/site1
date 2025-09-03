@@ -13,6 +13,13 @@ module.exports = (redis, upload, uploadFolder) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Bem-vindo!</title>
+        <script>
+          (function() {
+            if (localStorage.getItem('dark-mode') === 'enabled') {
+              document.body.classList.add('dark-mode');
+            }
+          })();
+        </script>
         <style>
           /* Variáveis CSS para cores */
           :root {
@@ -44,14 +51,7 @@ module.exports = (redis, upload, uploadFolder) => {
           }
 
           /* Estilos universais para a barra superior */
-          body { 
-            font-family: sans-serif; 
-            margin: 0; 
-            padding-top: 70px; 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            transition: background-color 0.3s, color 0.3s; 
-          }
+          body { font-family: sans-serif; margin: 0; padding-top: 70px; background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
           .top-bar {
             position: fixed; top: 0; left: 0; width: 100%;
             background-color: var(--top-bar-bg);
@@ -205,8 +205,8 @@ module.exports = (redis, upload, uploadFolder) => {
               darkModeToggle.checked = false;
             }
           }
-          const isDarkMode = localStorage.getItem('dark-mode') === 'enabled';
-          updateDarkModeUI(isDarkMode);
+          const isDarkModeInitial = localStorage.getItem('dark-mode') === 'enabled';
+          updateDarkModeUI(isDarkModeInitial);
           darkModeToggle.addEventListener('change', () => {
             if (darkModeToggle.checked) {
               localStorage.setItem('dark-mode', 'enabled');

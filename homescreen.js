@@ -9,6 +9,13 @@ router.get("/", (req, res) => {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Place Holder</title>
+      <script>
+        (function() {
+          if (localStorage.getItem('dark-mode') === 'enabled') {
+            document.body.classList.add('dark-mode');
+          }
+        })();
+      </script>
       <style>
         /* Variáveis CSS para cores */
         :root {
@@ -67,7 +74,7 @@ router.get("/", (req, res) => {
         .back-button span { font-size: 1.2em; line-height: 1; }
         .back-button:hover { background-color: var(--button-bg-hover); }
 
-        /* Estilos do Switch de Modo Escuro */
+        /* Switch de Modo Escuro */
         .dark-mode-switch { display: flex; align-items: center; gap: 10px; }
         .switch-text { color: var(--text-color); transition: color 0.3s; }
         .switch-label { display: block; cursor: pointer; text-indent: -9999px; width: 50px; height: 25px; background: grey; border-radius: 100px; position: relative; }
@@ -151,8 +158,8 @@ router.get("/", (req, res) => {
           }
         }
         
-        const isDarkMode = localStorage.getItem('dark-mode') === 'enabled';
-        updateDarkModeUI(isDarkMode);
+        const isDarkModeInitial = localStorage.getItem('dark-mode') === 'enabled';
+        updateDarkModeUI(isDarkModeInitial);
 
         darkModeToggle.addEventListener('change', () => {
           if (darkModeToggle.checked) {

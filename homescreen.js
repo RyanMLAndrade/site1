@@ -10,30 +10,61 @@ router.get("/", (req, res) => {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Place Holder</title>
       <style>
-        /* Estilos universais para a barra superior */
-        body { font-family: sans-serif; margin: 0; padding-top: 70px; background-color: #f4f4f4; color: #333; transition: background-color 0.3s, color 0.3s; }
+        /* Variáveis CSS para cores */
+        :root {
+          --bg-color: #f4f4f4;
+          --text-color: #333;
+          --container-bg: white;
+          --container-shadow: rgba(0,0,0,0.1);
+          --top-bar-bg: #f8f9fa;
+          --top-bar-shadow: rgba(0,0,0,0.1);
+          --button-bg: #6c757d;
+          --button-hover-bg: #5a6268;
+          --feature-box-bg: white;
+          --feature-box-shadow: rgba(0,0,0,0.1);
+        }
+
+        body.dark-mode {
+          --bg-color: #121212;
+          --text-color: #e0e0e0;
+          --container-bg: #1e1e1e;
+          --container-shadow: rgba(0,0,0,0.3);
+          --top-bar-bg: #2c2c2c;
+          --top-bar-shadow: rgba(0,0,0,0.3);
+          --button-bg: #444;
+          --button-hover-bg: #555;
+          --feature-box-bg: #282828;
+          --feature-box-shadow: rgba(0,0,0,0.3);
+        }
+
+        /* Estilos globais */
+        body { 
+          font-family: sans-serif; 
+          margin: 0; 
+          padding-top: 80px; /* Ajustado para 80px */
+          background-color: var(--bg-color); 
+          color: var(--text-color); 
+          transition: background-color 0.3s, color 0.3s; 
+        }
+
+        /* Barra Superior */
         .top-bar {
           position: fixed; top: 0; left: 0; width: 100%;
-          background-color: #f8f9fa;
+          background-color: var(--top-bar-bg);
           padding: 10px 20px;
           display: flex; justify-content: space-between;
           align-items: center;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+          box-shadow: 0 2px 5px var(--top-bar-shadow);
           z-index: 1000;
           box-sizing: border-box;
-          transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
+          transition: background-color 0.3s, box-shadow 0.3s;
         }
-        body.dark-mode .top-bar {
-          background-color: #2c2c2c;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-        .top-bar-left { display: flex; align-items: center; }
-        .top-bar-right { display: flex; align-items: center; gap: 20px; }
+        .top-bar-left, .top-bar-right { display: flex; align-items: center; gap: 20px; }
 
-        /* Estilos do Botão Voltar */
+        /* Botão Voltar */
         .back-button {
           background-color: transparent;
-          color: #333;
+          color: var(--text-color); /* Usa a cor do texto do body */
           border: none;
           padding: 8px 15px;
           border-radius: 5px;
@@ -45,39 +76,41 @@ router.get("/", (req, res) => {
         }
         .back-button span { font-size: 1.2em; line-height: 1; }
         .back-button:hover { background-color: #e9ecef; }
-        body.dark-mode .back-button { color: #e0e0e0; }
         body.dark-mode .back-button:hover { background-color: #444; }
 
-        /* Estilos do Switch de Modo Escuro */
+        /* Switch de Modo Escuro */
         .dark-mode-switch { display: flex; align-items: center; gap: 10px; }
-        .switch-text { color: #555; transition: color 0.3s; }
-        body.dark-mode .switch-text { color: #ccc; }
+        .switch-text { color: var(--text-color); transition: color 0.3s; }
         .switch-label { display: block; cursor: pointer; text-indent: -9999px; width: 50px; height: 25px; background: grey; border-radius: 100px; position: relative; }
         .switch-label:after { content: ''; position: absolute; top: 2px; left: 2px; width: 21px; height: 21px; background: #fff; border-radius: 90px; transition: 0.3s; }
         .dark-mode-input:checked + .switch-label { background: #007bff; }
         .dark-mode-input:checked + .switch-label:after { left: calc(100% - 2px); transform: translateX(-100%); }
         .dark-mode-input { display: none; }
-
+        
         /* Estilos da Página */
-        .container { text-align: center; max-width: 800px; width: 100%; margin: 0 auto; }
-        h1, p { color: #333; }
-        .feature-box { background: white; color: #333; transition: background 0.3s, color 0.3s; }
-        .feature-box a { color: inherit; }
+        .container { 
+          text-align: center; max-width: 800px; width: 100%; margin: 20px auto;
+          background: var(--container-bg); 
+          padding: 2rem; border-radius: 8px; 
+          box-shadow: 0 4px 6px var(--container-shadow); 
+          transition: background 0.3s, box-shadow 0.3s; 
+        }
+        h1, p { color: var(--text-color); } /* Ajusta a cor do texto para as variáveis */
 
-        /* Modo Escuro da Página */
-        body.dark-mode h1, body.dark-mode p { color: #e0e0e0; }
-        body.dark-mode .container { background: #1e1e1e; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        body.dark-mode .feature-box { background: #282828; color: #e0e0e0; }
-        body.dark-mode .feature-box a { color: #e0e0e0; }
-
-        /* Outros estilos */
-        .feature-box { padding: 30px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transition: transform 0.3s ease; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .feature-box { 
+          background: var(--feature-box-bg); 
+          color: var(--text-color); /* Ajusta a cor do texto para as variáveis */
+          padding: 30px; border-radius: 10px; 
+          box-shadow: 0 5px 15px var(--feature-box-shadow); 
+          transition: transform 0.3s ease, background 0.3s, color 0.3s, box-shadow 0.3s; 
+          display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; 
+        }
         .feature-box:hover { transform: translateY(-5px); }
-        .feature-box a { text-decoration: none; font-weight: bold; }
+        .feature-box a { text-decoration: none; color: inherit; font-weight: bold; }
         .feature-box a:hover { text-decoration: underline; }
         .coming-soon { opacity: 0.6; cursor: not-allowed; }
         .coming-soon:hover { transform: none; }
-        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
       </style>
     </head>
     <body>

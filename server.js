@@ -6,7 +6,7 @@ const fs = require("fs");
 
 // --- Importe os módulos de rotas ---
 const homeRouter = require("./homescreen.js");
-const shareRouter = require("./share.js");
+const createShareRouter = require("./share.js");
 
 const app = express();
 
@@ -20,22 +20,47 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// ---------- FUNÇÃO PARA LIMPAR ARQUIVOS EXPIRADOS ----------
+async function deleteExpiredFiles() {
+  console.log("Executando a limpeza de arquivos expirados...");
+  const stream = redis.scanStream({ match: 'arquivos:*' });
+  stream.on('data', async (keys) => {
+    if (keys.length) {
+      const pipeline = redis.pipeline();
+      const filesToDelete = [];
+      for (const key of keys) {
+        const fileList = await redis.lrange(key, 0, -1);
+        fileList.forEach(file => filesToDelete.push(file));
+        pipeline.del(key);
+      }
+      await pipeline.exec();
+      
+      filesToDelete.forEach(file => {
+        const filePath = path.join(uploadFolder, file);
+        if (fs.existsSync(filePath)) {
+          fs.unlink(filePath, (err) => {
+            if (err) console.error(`Erro ao apagar o arquivo ${filePath}:`, err);
+            else console.log(`Arquivo ${filePath} apagado com sucesso.`);
+          });
+        }
+      });
+    }
+  });
+  stream.on('end', () => console.log("Limpeza de arquivos concluída."));
+}
+
 // Garanta que o Express use os middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // --- Conecte as rotas aos seus respectivos caminhos ---
 app.use("/", homeRouter);
-app.use("/", shareRouter); // Se as rotas de compartilhamento não tiverem um prefixo, pode usar assim. Se tiverem, adicione o prefixo.
-
-// Coloque todas as rotas da API e as funções de limpeza aqui, como no seu código original.
-// O código para as rotas da API (`/api/sala`, etc.) deve ser movido para `share.js`.
-// Exemplo:
-// app.post("/api/sala/:senha", async (req, res) => { ... });
+const shareRouter = createShareRouter(redis, upload, uploadFolder, fs, path);
+app.use("/", shareRouter);
 
 // ---------- AGENDAMENTO DE LIMPEZA ----------
-// Coloque sua função de limpeza aqui...
-// setInterval(deleteExpiredFiles, 600000);
+// Agenda a execução da função de limpeza a cada 10 minutos (600000 ms).
+setInterval(deleteExpiredFiles, 600000);
 
 // ---------- START SERVER ----------
 const port = process.env.PORT || 3000;

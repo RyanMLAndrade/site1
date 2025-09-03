@@ -4,7 +4,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// --- Importa os módulos de rotas (o share.js agora é uma função) ---
+// --- Importa os módulos de rotas ---
 const homeRouter = require("./homescreen.js");
 const createShareRouter = require("./share.js");
 

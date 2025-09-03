@@ -14,23 +14,121 @@ module.exports = (redis, upload, uploadFolder) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Bem-vindo!</title>
         <style>
-          body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f4f4; }
-          .container { text-align: center; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+          /* Estilos universais para a barra superior */
+          body { font-family: sans-serif; margin: 0; padding-top: 70px; background-color: #f4f4f4; color: #333; transition: background-color 0.3s, color 0.3s; }
+          .top-bar {
+            position: fixed; top: 0; left: 0; width: 100%;
+            background-color: #f8f9fa;
+            padding: 10px 20px;
+            display: flex; justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
+          }
+          body.dark-mode .top-bar {
+            background-color: #2c2c2c;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+          }
+          .top-bar-left { display: flex; align-items: center; }
+          .top-bar-right { display: flex; align-items: center; gap: 20px; }
+
+          /* Estilos do Botão Voltar */
+          .back-button {
+            background-color: transparent;
+            color: #333;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            transition: background-color 0.3s, color 0.3s;
+          }
+          .back-button span { font-size: 1.2em; line-height: 1; }
+          .back-button:hover { background-color: #e9ecef; }
+          body.dark-mode .back-button { color: #e0e0e0; }
+          body.dark-mode .back-button:hover { background-color: #444; }
+
+          /* Estilos do Switch de Modo Escuro */
+          .dark-mode-switch { display: flex; align-items: center; gap: 10px; }
+          .switch-text { color: #555; transition: color 0.3s; }
+          body.dark-mode .switch-text { color: #ccc; }
+          .switch-label { display: block; cursor: pointer; text-indent: -9999px; width: 50px; height: 25px; background: grey; border-radius: 100px; position: relative; }
+          .switch-label:after { content: ''; position: absolute; top: 2px; left: 2px; width: 21px; height: 21px; background: #fff; border-radius: 90px; transition: 0.3s; }
+          .dark-mode-input:checked + .switch-label { background: #007bff; }
+          .dark-mode-input:checked + .switch-label:after { left: calc(100% - 2px); transform: translateX(-100%); }
+          .dark-mode-input { display: none; }
+          
+          /* Estilos da Página de Entrada */
+          .page-container { 
+            display: flex; justify-content: center; align-items: center; height: calc(100vh - 70px); 
+            text-align: center; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            max-width: 500px; margin: 0 auto; 
+          }
+          body.dark-mode .page-container { background: #1e1e1e; }
           input[type="text"] { padding: 0.5rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; margin-top: 1rem; }
           button { padding: 0.75rem 1.5rem; font-size: 1rem; color: white; background-color: #007bff; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem; }
           button:hover { background-color: #0056b3; }
         </style>
       </head>
       <body>
-        <div class="container">
-          <h1>Compartilhador de Texto e Arquivos</h1>
-          <p>Insira a chave da sala para entrar:</p>
-          <form id="key-form" action="/sala" method="GET">
-            <input type="text" name="senha" id="sala-senha" placeholder="Ex: minha-sala" required />
-            <br>
-            <button type="submit">Entrar</button>
-          </form>
+        <div class="top-bar">
+          <div class="top-bar-left">
+            <a href="/" class="back-button">
+              <span>&#11013;</span> Voltar
+            </a>
+          </div>
+          <div class="top-bar-right">
+            <div class="dark-mode-switch">
+              <span class="switch-text" id="dark-mode-label">Modo Escuro ☀︎</span>
+              <input type="checkbox" class="dark-mode-input" id="dark-mode-toggle">
+              <label class="switch-label" for="dark-mode-toggle">Toggle</label>
+            </div>
+          </div>
         </div>
+        <div class="page-container">
+          <div>
+            <h1>Compartilhador de Texto e Arquivos</h1>
+            <p>Insira a chave da sala para entrar:</p>
+            <form id="key-form" action="/sala" method="GET">
+              <input type="text" name="senha" id="sala-senha" placeholder="Ex: minha-sala" required />
+              <br>
+              <button type="submit">Entrar</button>
+            </form>
+          </div>
+        </div>
+
+        <script>
+          const darkModeToggle = document.getElementById("dark-mode-toggle");
+          const darkModeLabel = document.getElementById("dark-mode-label");
+          const body = document.body;
+
+          function updateDarkModeUI(isDarkMode) {
+            if (isDarkMode) {
+              body.classList.add('dark-mode');
+              darkModeLabel.textContent = "Modo Escuro ☾";
+              darkModeToggle.checked = true;
+            } else {
+              body.classList.remove('dark-mode');
+              darkModeLabel.textContent = "Modo Escuro ☀︎";
+              darkModeToggle.checked = false;
+            }
+          }
+          const isDarkMode = localStorage.getItem('dark-mode') === 'enabled';
+          updateDarkModeUI(isDarkMode);
+          darkModeToggle.addEventListener('change', () => {
+            if (darkModeToggle.checked) {
+              localStorage.setItem('dark-mode', 'enabled');
+              updateDarkModeUI(true);
+            } else {
+              localStorage.setItem('dark-mode', 'disabled');
+              updateDarkModeUI(false);
+            }
+          });
+        </script>
       </body>
       </html>
     `);
@@ -55,8 +153,8 @@ module.exports = (redis, upload, uploadFolder) => {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Sala: ${senha}</title>
           <style>
-            /* Reset básico */
-            body { font-family: sans-serif; margin: 0; padding-top: 70px; /* Espaço para a barra superior */ background-color: #f4f4f4; color: #333; transition: background-color 0.3s, color 0.3s; }
+            /* Estilos universais para a barra superior */
+            body { font-family: sans-serif; margin: 0; padding-top: 70px; background-color: #f4f4f4; color: #333; transition: background-color 0.3s, color 0.3s; }
             .container { max-width: 1200px; margin: 20px auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background 0.3s, box-shadow 0.3s; }
             h1 { text-align: center; margin-bottom: 1rem; }
             hr { margin: 2rem 0; border: 0; border-top: 1px solid #ccc; }
@@ -64,9 +162,9 @@ module.exports = (redis, upload, uploadFolder) => {
             /* Barra Superior */
             .top-bar {
               position: fixed; top: 0; left: 0; width: 100%;
-              background-color: #f8f9fa; /* Cor clara */
+              background-color: #f8f9fa;
               padding: 10px 20px;
-              display: flex; justify-content: flex-end; /* Alinhar itens à direita */
+              display: flex; justify-content: space-between;
               align-items: center;
               box-shadow: 0 2px 5px rgba(0,0,0,0.1);
               z-index: 1000;
@@ -74,33 +172,30 @@ module.exports = (redis, upload, uploadFolder) => {
               transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
             }
             body.dark-mode .top-bar {
-              background-color: #2c2c2c; /* Cor escura */
+              background-color: #2c2c2c;
               box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             }
-            .top-bar-content {
-                display: flex;
-                gap: 20px; /* Espaço entre os elementos da barra */
-                align-items: center;
-            }
-
-            /* Botão Voltar */
+            .top-bar-left { display: flex; align-items: center; }
+            .top-bar-right { display: flex; align-items: center; gap: 20px; }
             .back-button {
-              background-color: #6c757d;
-              color: white;
-              border: none;
-              padding: 8px 15px;
-              border-radius: 5px;
-              cursor: pointer;
-              display: flex;
-              align-items: center;
-              text-decoration: none;
-              transition: background-color 0.3s;
+              background-color: transparent; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; text-decoration: none; transition: background-color 0.3s, color 0.3s;
             }
-            .back-button:hover { background-color: #5a6268; }
-            .back-button span { margin-right: 5px; font-size: 1.2em; line-height: 1; } /* Estilo da seta */
+            .back-button span { font-size: 1.2em; line-height: 1; }
+            .back-button:hover { background-color: #e9ecef; }
+            body.dark-mode .back-button { color: #e0e0e0; }
+            body.dark-mode .back-button:hover { background-color: #444; }
 
-
-            /* Modo Escuro */
+            /* Estilos do Switch de Modo Escuro */
+            .dark-mode-switch { display: flex; align-items: center; gap: 10px; }
+            .switch-text { color: #555; transition: color 0.3s; }
+            body.dark-mode .switch-text { color: #ccc; }
+            .switch-label { display: block; cursor: pointer; text-indent: -9999px; width: 50px; height: 25px; background: grey; border-radius: 100px; position: relative; }
+            .switch-label:after { content: ''; position: absolute; top: 2px; left: 2px; width: 21px; height: 21px; background: #fff; border-radius: 90px; transition: 0.3s; }
+            .dark-mode-input:checked + .switch-label { background: #007bff; }
+            .dark-mode-input:checked + .switch-label:after { left: calc(100% - 2px); transform: translateX(-100%); }
+            .dark-mode-input { display: none; }
+            
+            /* Estilos da Página de Sala */
             body.dark-mode { background-color: #121212; color: #e0e0e0; }
             body.dark-mode .container { background: #1e1e1e; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
             body.dark-mode h1, body.dark-mode h2, body.dark-mode p, body.dark-mode label { color: #e0e0e0; }
@@ -111,32 +206,13 @@ module.exports = (redis, upload, uploadFolder) => {
             body.dark-mode hr { border-color: #444; }
             body.dark-mode .file-item { background: #282828; }
             body.dark-mode .file-item a { color: #87cefa; }
-
-            /* Switch de Modo Escuro */
-            .dark-mode-switch { 
-              display: flex; align-items: center;
-              gap: 10px; 
-            }
-            .switch-text { color: #555; transition: color 0.3s; }
-            body.dark-mode .switch-text { color: #ccc; }
-            .switch-label { display: block; cursor: pointer; text-indent: -9999px; width: 50px; height: 25px; background: grey; border-radius: 100px; position: relative; }
-            .switch-label:after { content: ''; position: absolute; top: 2px; left: 2px; width: 21px; height: 21px; background: #fff; border-radius: 90px; transition: 0.3s; }
-            .dark-mode-input:checked + .switch-label { background: #007bff; }
-            .dark-mode-input:checked + .switch-label:after { left: calc(100% - 2px); transform: translateX(-100%); }
-            .dark-mode-input { display: none; }
-
-            /* Layout de Duas Colunas */
             .main-content { display: flex; gap: 20px; }
             .left-column { flex: 2; display: flex; flex-direction: column; gap: 20px; }
             .right-column { flex: 1; display: flex; flex-direction: column; gap: 20px; background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.1); }
             body.dark-mode .right-column { background: #222; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); }
-
-            /* Estilos de Botões e Elementos */
             textarea { width: 100%; min-height: 400px; font-size: 1rem; padding: 1rem; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; resize: none; }
-            
             #upload-form button { background-color: #28a745; color: white; }
             #upload-form button:hover { background-color: #218838; }
-
             .buttons { display: flex; justify-content: flex-end; gap: 1rem; }
             button { padding: 0.75rem 1.5rem; font-size: 1rem; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
             #save-btn { background-color: #28a745; }
@@ -144,7 +220,6 @@ module.exports = (redis, upload, uploadFolder) => {
             #copy-btn { background-color: #007bff; }
             #copy-btn:hover { background-color: #0056b3; }
             .message { text-align: center; margin-top: 1rem; color: #333; }
-            
             #file-list { list-style: none; padding: 0; }
             .file-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: #eee; padding: 8px; border-radius: 4px; }
             .file-item a { text-decoration: none; color: #007bff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -154,15 +229,17 @@ module.exports = (redis, upload, uploadFolder) => {
         </head>
         <body>
           <div class="top-bar">
-            <div class="top-bar-content">
+            <div class="top-bar-left">
+              <a href="/compartilhar" class="back-button">
+                <span>&#11013;</span> Voltar
+              </a>
+            </div>
+            <div class="top-bar-right">
               <div class="dark-mode-switch">
                 <span class="switch-text" id="dark-mode-label">Modo Escuro ☀︎</span>
                 <input type="checkbox" class="dark-mode-input" id="dark-mode-toggle">
                 <label class="switch-label" for="dark-mode-toggle">Toggle</label>
               </div>
-              <a href="/" class="back-button">
-                <span>&#11013;</span> Voltar
-              </a>
             </div>
           </div>
 
@@ -178,7 +255,6 @@ module.exports = (redis, upload, uploadFolder) => {
                 </div>
                 <p id="status-message" class="message"></p>
               </div>
-
               <div class="right-column">
                 <h2>Arquivos</h2>
                 <form id="upload-form" enctype="multipart/form-data">
@@ -198,7 +274,7 @@ module.exports = (redis, upload, uploadFolder) => {
           </div>
 
           <script>
-            // Lógica do Modo Escuro (agora com a atualização do emoji)
+            // Lógica do Modo Escuro
             const darkModeToggle = document.getElementById("dark-mode-toggle");
             const darkModeLabel = document.getElementById("dark-mode-label");
             const body = document.body;
@@ -217,7 +293,6 @@ module.exports = (redis, upload, uploadFolder) => {
 
             const isDarkMode = localStorage.getItem('dark-mode') === 'enabled';
             updateDarkModeUI(isDarkMode);
-
             darkModeToggle.addEventListener('change', () => {
               if (darkModeToggle.checked) {
                 localStorage.setItem('dark-mode', 'enabled');
@@ -343,11 +418,7 @@ module.exports = (redis, upload, uploadFolder) => {
     try {
       const { senha, nome } = req.params;
       const filePath = path.join(uploadFolder, nome);
-
-      // Remove a referência do Redis
       await redis.lrem(`arquivos:${senha}`, 0, nome);
-
-      // Apaga o arquivo físico do servidor
       fs.unlink(filePath, (err) => {
         if (err) {
           console.error(`Erro ao apagar o arquivo físico ${filePath}:`, err);

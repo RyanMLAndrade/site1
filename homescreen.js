@@ -10,9 +10,9 @@ router.get("/", (req, res) => {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Place Holder</title>
       <script>
-        // Esta função aplica o tema imediatamente antes da renderização
+        // Aplica o tema imediatamente para evitar o "piscar"
         if (localStorage.getItem('dark-mode') === 'enabled') {
-          document.documentElement.classList.add('dark-mode');
+          document.documentElement.style.backgroundColor = '#121212';
         }
       </script>
       <style>
@@ -157,8 +157,6 @@ router.get("/", (req, res) => {
           }
         }
         
-        // A lógica de estado inicial foi movida para o <head>, mas ainda
-        // precisamos atualizar o estado do switch na tela.
         const isDarkModeInitial = localStorage.getItem('dark-mode') === 'enabled';
         updateDarkModeUI(isDarkModeInitial);
 

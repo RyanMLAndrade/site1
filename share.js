@@ -110,6 +110,7 @@ module.exports = (redis, upload, uploadFolder) => {
           .input-group {
             display: flex; flex-direction: column; align-items: center; gap: 10px;
             width: 300px; margin: 0 auto;
+            padding-bottom: 15px; /* Adiciona espaço para a mensagem de erro */
           }
           .dev-password-container, .public-password-container {
             display: flex; flex-direction: column; width: 100%;
@@ -146,7 +147,15 @@ module.exports = (redis, upload, uploadFolder) => {
           }
           button:hover { background-color: var(--button-primary-hover-bg); }
           .message { margin-top: 10px; }
-          .error-message { color: #dc3545; font-size: 0.8em; margin-top: -10px; }
+          
+          /* Estilo da mensagem de erro */
+          .error-message { 
+            color: #dc3545; /* Cor vermelha para o erro */
+            font-size: 0.8em; 
+            margin-top: 5px; /* Espaçamento da input acima */
+            text-align: left; /* Alinha o texto à esquerda */
+            width: 100%; /* Ocupa a largura total para alinhamento */
+          }
           .error-message.hidden { display: none; }
 
           /* Estilos da Página de Sala (Sem alteração) */
@@ -211,7 +220,7 @@ module.exports = (redis, upload, uploadFolder) => {
 
                 <div class="dev-password-container" id="dev-password-container">
                   <input type="password" name="dev_pass" id="dev-password-input" placeholder="Senha do desenvolvedor" />
-                  <p id="dev-error-message" class="error-message hidden">* Senha de desenvolvedor incorreta!</p>
+                  <p id="dev-error-message" class="error-message hidden"></p>
                 </div>
                 <div class="public-password-container" id="public-password-container">
                   <input type="text" name="public_pass" id="public-password-input" placeholder="Senha para o público" />
@@ -270,6 +279,8 @@ module.exports = (redis, upload, uploadFolder) => {
               devPasswordContainer.classList.remove("active");
               publicPasswordContainer.classList.remove("active");
               devPasswordInput.required = false;
+              // Limpa a mensagem de erro quando o modo dev é desativado
+              devErrorMessage.classList.add("hidden"); 
             }
           });
           

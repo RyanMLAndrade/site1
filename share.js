@@ -6,6 +6,13 @@ const fs = require("fs");
 module.exports = (redis, upload, uploadFolder) => {
   // Rota para a página de entrada da senha
   router.get("/compartilhar", (req, res) => {
+    // Adicione a lógica de exibição de erro
+    const { erro } = req.query;
+    let errorMessage = '';
+    if (erro === 'dev_exclusive') {
+      errorMessage = '<p style="color: #dc3545; font-weight: bold;">Erro: sala exclusiva para desenvolvedores</p>';
+    }
+
     res.send(`
       <!DOCTYPE html>
       <html lang="pt-br">
@@ -192,7 +199,6 @@ module.exports = (redis, upload, uploadFolder) => {
           <div class="container">
             <h1>Compartilhador de Texto e Arquivos</h1>
             <p>Insira a chave da sala para entrar:</p>
-            ${errorMessage}
             <form id="key-form" action="/sala" method="GET">
               <div class="input-group">
                 <input type="text" name="senha" id="sala-senha" placeholder="Ex: minha-sala" required />
@@ -635,7 +641,7 @@ module.exports = (redis, upload, uploadFolder) => {
     }
   });
 
-  // ---------- NOVAS ROTAS DA API ----------
+  // ---------- ROTAS DA API ----------
   router.delete("/api/sala/:senha/arquivo/:nome", async (req, res) => {
     try {
       const { senha, nome } = req.params;

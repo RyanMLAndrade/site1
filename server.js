@@ -8,7 +8,8 @@ const fs = require("fs");
 
 // --- Importa os módulos de rotas ---
 const homeRouter = require("./homescreen.js");
-const createShareRouter = require("./share.js");
+const createShareRouter = require("./share.js"); // Certifique-se que share.js exporta uma função: module.exports = function(redis, upload, uploadFolder) { ... }
+const cors = require("cors");
 
 const app = express();
 
@@ -60,8 +61,13 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- Conecta as rotas aos seus respectivos caminhos ---
 app.use("/", homeRouter);
+// Se share.js exporta uma função, mantenha assim:
 const shareRouter = createShareRouter(redis, upload, uploadFolder);
 app.use("/", shareRouter);
+
+// Se share.js exporta diretamente um router, use assim:
+// const shareRouter = require("./share.js");
+// app.use("/", shareRouter);
 
 // ---------- AGENDAMENTO DE LIMPEZA ----------
 // Agenda a execução da função de limpeza a cada 10 minutos (600000 ms).

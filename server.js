@@ -8,13 +8,12 @@ const fs = require("fs");
 
 // --- Importa os módulos de rotas ---
 const homeRouter = require("./homescreen.js");
-const createShareRouter = require("./share.js"); // Certifique-se que share.js exporta uma função: module.exports = function(redis, upload, uploadFolder) { ... }
-const cors = require("cors");
+const createShareRouter = require("./share.js");
 
 const app = express();
 
 // Conecta ao Redis usando a variável de ambiente (CORREÇÃO)
-const redis = new Redis(process.env.REDIS_URL);
+const redis = new Redis(process.env.REDIS_PUBLIC_URL || process.env.REDIS_URL);
 
 // Configura o Multer (código de setup)
 const uploadFolder = path.join(__dirname, "uploads");
@@ -61,13 +60,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- Conecta as rotas aos seus respectivos caminhos ---
 app.use("/", homeRouter);
-// Se share.js exporta uma função, mantenha assim:
 const shareRouter = createShareRouter(redis, upload, uploadFolder);
 app.use("/", shareRouter);
-
-// Se share.js exporta diretamente um router, use assim:
-// const shareRouter = require("./share.js");
-// app.use("/", shareRouter);
 
 // ---------- AGENDAMENTO DE LIMPEZA ----------
 // Agenda a execução da função de limpeza a cada 10 minutos (600000 ms).

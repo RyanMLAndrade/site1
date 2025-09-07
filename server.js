@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require("express");
 const Redis = require("ioredis");
 const multer = require("multer");
@@ -10,8 +12,10 @@ const createShareRouter = require("./share.js");
 
 const app = express();
 
-// Conecta ao Redis e configura o Multer (código de setup)
-const redis = new Redis(process.env.REDIS_PUBLIC_URL || process.env.REDIS_URL);
+// Conecta ao Redis usando a variável de ambiente (CORREÇÃO)
+const redis = new Redis(process.env.REDIS_URL);
+
+// Configura o Multer (código de setup)
 const uploadFolder = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadFolder)) fs.mkdirSync(uploadFolder);
 const storage = multer.diskStorage({

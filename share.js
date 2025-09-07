@@ -6,13 +6,6 @@ const fs = require("fs");
 module.exports = (redis, upload, uploadFolder) => {
   // Rota para a página de entrada da senha
   router.get("/compartilhar", (req, res) => {
-    // Adicione a lógica de exibição de erro
-    const { erro } = req.query;
-    let errorMessage = '';
-    if (erro === 'dev_exclusive') {
-      errorMessage = '<p style="color: #dc3545; font-weight: bold;">Erro: sala exclusiva para desenvolvedores</p>';
-    }
-
     res.send(`
       <!DOCTYPE html>
       <html lang="pt-br">
@@ -110,21 +103,35 @@ module.exports = (redis, upload, uploadFolder) => {
           .input-group {
             display: flex; flex-direction: column; align-items: center; gap: 10px;
             width: 300px; margin: 0 auto;
-            padding-bottom: 15px; /* Adiciona espaço para a mensagem de erro */
+            min-height: 250px; 
           }
           .dev-password-container, .public-password-container {
-            display: flex; flex-direction: column; width: 100%;
-            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-            opacity: 0;
-            height: 0;
-            visibility: hidden;
-            margin-top: 0;
+            display: none;
+            width: 100%;
+            flex-direction: column;
+            gap: 5px;
           }
           .dev-password-container.active, .public-password-container.active {
-            opacity: 1;
-            height: auto;
-            visibility: visible;
-            margin-top: 10px;
+            display: flex;
+          }
+          .password-input-wrapper {
+            position: relative;
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          /* Estilo da mensagem de erro */
+          .error-message {
+            color: #dc3545 !important;
+            font-size: 0.8em;
+            margin-top: 5px;
+            text-align: left;
+            width: 100%;
+            height: 1.5em; 
+            display: none;
+          }
+          .error-message.visible {
+            display: block;
           }
 
           .page-container h1, .page-container p, .page-container label { color: var(--text-color); }
@@ -148,16 +155,6 @@ module.exports = (redis, upload, uploadFolder) => {
           button:hover { background-color: var(--button-primary-hover-bg); }
           .message { margin-top: 10px; }
           
-          /* Estilo da mensagem de erro */
-          .error-message { 
-            color: #dc3545; /* Cor vermelha para o erro */
-            font-size: 0.8em; 
-            margin-top: 5px; /* Espaçamento da input acima */
-            text-align: left; /* Alinha o texto à esquerda */
-            width: 100%; /* Ocupa a largura total para alinhamento */
-          }
-          .error-message.hidden { display: none; }
-
           /* Estilos da Página de Sala (Sem alteração) */
           .main-content { display: flex; gap: 20px; }
           .left-column { flex: 2; display: flex; flex-direction: column; gap: 20px; }
@@ -173,8 +170,10 @@ module.exports = (redis, upload, uploadFolder) => {
             background-color: var(--input-bg); color: var(--text-color);
             transition: background-color 0.3s, border-color 0.3s, color 0.3s;
           }
+          
           #upload-form button { background-color: #28a745; color: white; }
           #upload-form button:hover { background-color: #218838; }
+
           .buttons { display: flex; justify-content: flex-end; gap: 1rem; }
           button { padding: 0.75rem 1.5rem; font-size: 1rem; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
           #save-btn { background-color: #28a745; }
@@ -220,7 +219,7 @@ module.exports = (redis, upload, uploadFolder) => {
 
                 <div class="dev-password-container" id="dev-password-container">
                   <input type="password" name="dev_pass" id="dev-password-input" placeholder="Senha do desenvolvedor" />
-                  <p id="dev-error-message" class="error-message hidden"></p>
+                  <p id="dev-error-message" class="error-message"></p>
                 </div>
                 <div class="public-password-container" id="public-password-container">
                   <input type="text" name="public_pass" id="public-password-input" placeholder="Senha para o público" />
@@ -270,7 +269,8 @@ module.exports = (redis, upload, uploadFolder) => {
           const devPassword = "git push -u origin main";
           const devErrorMessage = document.getElementById("dev-error-message");
 
-          devModeToggle.addEventListener("change", () => {
+          // Lógica para mostrar/esconder campos de senha
+          function togglePasswordFields() {
             if (devModeToggle.checked) {
               devPasswordContainer.classList.add("active");
               publicPasswordContainer.classList.add("active");
@@ -279,26 +279,26 @@ module.exports = (redis, upload, uploadFolder) => {
               devPasswordContainer.classList.remove("active");
               publicPasswordContainer.classList.remove("active");
               devPasswordInput.required = false;
-              // Limpa a mensagem de erro quando o modo dev é desativado
-              devErrorMessage.classList.add("hidden"); 
             }
-          });
+          }
+
+          // Inicia o estado dos campos de senha
+          togglePasswordFields();
           
+          devModeToggle.addEventListener("change", togglePasswordFields);
+
           keyForm.addEventListener("submit", (e) => {
-            // Limpa mensagens de erro anteriores
-            devErrorMessage.classList.add("hidden");
+            devErrorMessage.classList.remove("visible");
             
-            // Lógica para bloquear salas que começam com 'dev'
             if (!devModeToggle.checked && salaSenhaInput.value.toLowerCase().startsWith('dev')) {
               e.preventDefault();
               devErrorMessage.textContent = "* Sala exclusiva para desenvolvedores!";
-              devErrorMessage.classList.remove("hidden");
+              devErrorMessage.classList.add("visible");
             } else if (devModeToggle.checked) {
-              // Lógica para modo desenvolvedor
               if (devPasswordInput.value !== devPassword) {
                 e.preventDefault();
                 devErrorMessage.textContent = "* Senha de desenvolvedor incorreta!";
-                devErrorMessage.classList.remove("hidden");
+                devErrorMessage.classList.add("visible");
               } else {
                 salaSenhaInput.value = "DEV-" + salaSenhaInput.value;
               }
@@ -312,7 +312,7 @@ module.exports = (redis, upload, uploadFolder) => {
 
   // Rota para a página do editor de texto e arquivos
   router.get("/sala", async (req, res) => {
-    const { senha } = req.query; // Pega a senha
+    const { senha } = req.query;
     if (!senha) {
       return res.redirect("/compartilhar");
     }
